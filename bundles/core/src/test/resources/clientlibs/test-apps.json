@@ -90,7 +90,8 @@
                     "jcr:primaryType": "cq:ClientLibraryFolder",
                     "allowProxy": true,
                     "categories": [
-                        "core.wcm.components.accordion.v1"
+                        "core.wcm.components.accordion.v1",
+                        "multiple.components"
                     ],
                     "css.txt": {
                         "jcr:primaryType": "nt:file",
@@ -159,7 +160,8 @@
                     "jcr:primaryType": "cq:ClientLibraryFolder",
                     "allowProxy": true,
                     "categories": [
-                        "core.wcm.components.carousel.v1"
+                        "core.wcm.components.carousel.v1",
+                        "multiple.components"
                     ],
                     "css.txt": {
                         "jcr:primaryType": "nt:file",

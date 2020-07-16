@@ -78,6 +78,7 @@ class ClientLibrariesImplTest {
     private static final String TEASER_CATEGORY = "core.wcm.components.teaser.v1";
     private static final String ACCORDION_CATEGORY = "core.wcm.components.accordion.v1";
     private static final String CAROUSEL_CATEGORY = "core.wcm.components.carousel.v1";
+    private static final String MULTIPLE_CATEGORY = "multiple.components";
 
     private static final String TEASER_CLIENTLIB_PATH = "/apps/core/wcm/components/teaser/v1/teaser/clientlib";
     private static final String ACCORDION_CLIENTLIB_PATH = "/apps/core/wcm/components/accordion/v1/accordion/clientlib";
@@ -108,32 +109,38 @@ class ClientLibrariesImplTest {
         jsIncludes.put(TEASER_CATEGORY, "<script src=\"" + TEASER_CLIENTLIB_PATH + ".js\"></script>");
         jsIncludes.put(ACCORDION_CATEGORY, "<script src=\"" + ACCORDION_CLIENTLIB_PATH + ".js\"></script>");
         jsIncludes.put(CAROUSEL_CATEGORY, "<script src=\"" + CAROUSEL_CLIENTLIB_PATH + ".js\"></script>");
+        jsIncludes.put(MULTIPLE_CATEGORY, jsIncludes.get(ACCORDION_CATEGORY) + jsIncludes.get(CAROUSEL_CATEGORY));
 
         jsIncludesWithAttributes = new HashMap<>();
         jsIncludesWithAttributes.put(TEASER_CATEGORY, "<script async defer crossorigin=\"anonymous\" onload=\"myFunction()\" src=\"" + TEASER_CLIENTLIB_PATH + ".js\"></script>");
         jsIncludesWithAttributes.put(ACCORDION_CATEGORY, "<script async defer crossorigin=\"anonymous\" onload=\"myFunction()\" src=\"" + ACCORDION_CLIENTLIB_PATH + ".js\"></script>");
         jsIncludesWithAttributes.put(CAROUSEL_CATEGORY, "<script async defer crossorigin=\"anonymous\" onload=\"myFunction()\" src=\"" +
                 CAROUSEL_CLIENTLIB_PATH + ".js\"></script>");
+        jsIncludesWithAttributes.put(MULTIPLE_CATEGORY, jsIncludesWithAttributes.get(ACCORDION_CATEGORY) + jsIncludesWithAttributes.get(CAROUSEL_CATEGORY));
 
         cssIncludes = new HashMap<>();
         cssIncludes.put(TEASER_CATEGORY, "<link rel=\"stylesheet\" href=\"" + TEASER_CLIENTLIB_PATH + ".css\" type=\"text/css\">");
         cssIncludes.put(ACCORDION_CATEGORY, "<link rel=\"stylesheet\" href=\"" + ACCORDION_CLIENTLIB_PATH + ".css\" type=\"text/css\">");
         cssIncludes.put(CAROUSEL_CATEGORY, "<link rel=\"stylesheet\" href=\"" + CAROUSEL_CLIENTLIB_PATH + ".css\" type=\"text/css\">");
+        cssIncludes.put(MULTIPLE_CATEGORY, cssIncludes.get(ACCORDION_CATEGORY) + cssIncludes.get(CAROUSEL_CATEGORY));
 
         cssIncludesWithAttributes = new HashMap<>();
         cssIncludesWithAttributes.put(TEASER_CATEGORY, "<link media=\"print\" rel=\"stylesheet\" href=\"" + TEASER_CLIENTLIB_PATH + ".css\" type=\"text/css\">");
         cssIncludesWithAttributes.put(ACCORDION_CATEGORY, "<link media=\"print\" rel=\"stylesheet\" href=\"" + ACCORDION_CLIENTLIB_PATH + ".css\" type=\"text/css\">");
         cssIncludesWithAttributes.put(CAROUSEL_CATEGORY, "<link media=\"print\" rel=\"stylesheet\" href=\"" + CAROUSEL_CLIENTLIB_PATH + ".css\" type=\"text/css\">");
+        cssIncludesWithAttributes.put(MULTIPLE_CATEGORY, cssIncludesWithAttributes.get(ACCORDION_CATEGORY) + cssIncludesWithAttributes.get(CAROUSEL_CATEGORY));
 
         jsInlines = new HashMap<>();
         jsInlines.put(TEASER_CATEGORY, "console.log('teaser clientlib js');");
         jsInlines.put(ACCORDION_CATEGORY, "console.log('accordion clientlib js');");
         jsInlines.put(CAROUSEL_CATEGORY, "console.log('carousel clientlib js');");
+        jsInlines.put(MULTIPLE_CATEGORY, jsInlines.get(ACCORDION_CATEGORY) + jsInlines.get(CAROUSEL_CATEGORY));
 
         cssInlines = new HashMap<>();
         cssInlines.put(TEASER_CATEGORY, "html, .teaser { \n box-sizing: border-box;\n font-size: 14px; \n}");
         cssInlines.put(ACCORDION_CATEGORY, "html, .accordion { \n box-sizing: border-box;\n font-size: 14px; \n}");
         cssInlines.put(CAROUSEL_CATEGORY, "html, .carousel { \n box-sizing: border-box;\n font-size: 14px; \n}");
+        cssInlines.put(MULTIPLE_CATEGORY, cssInlines.get(ACCORDION_CATEGORY) + cssInlines.get(CAROUSEL_CATEGORY));
 
         // Mock ClientLibrary
         ClientLibrary teaserClientLibrary = mock(ClientLibrary.class);
@@ -144,11 +151,11 @@ class ClientLibrariesImplTest {
         when(teaserClientLibrary.getCategories()).thenReturn(teaserCategories);
         when(teaserClientLibrary.getPath()).thenReturn(TEASER_CLIENTLIB_PATH);
 
-        String[] accordionCategories = new String[]{ACCORDION_CATEGORY};
+        String[] accordionCategories = new String[]{ACCORDION_CATEGORY, MULTIPLE_CATEGORY};
         when(accordionClientLibrary.getCategories()).thenReturn(accordionCategories);
         when(accordionClientLibrary.getPath()).thenReturn(ACCORDION_CLIENTLIB_PATH);
 
-        String[] carouselCategories = new String[]{CAROUSEL_CATEGORY};
+        String[] carouselCategories = new String[]{CAROUSEL_CATEGORY, MULTIPLE_CATEGORY};
         when(carouselClientLibrary.getCategories()).thenReturn(carouselCategories);
         when(carouselClientLibrary.getPath()).thenReturn(CAROUSEL_CLIENTLIB_PATH);
 
@@ -279,6 +286,7 @@ class ClientLibrariesImplTest {
         categories.add(TEASER_CATEGORY);
         categories.add(ACCORDION_CATEGORY);
         categories.add(CAROUSEL_CATEGORY);
+        categories.add(MULTIPLE_CATEGORY);
         assertEquals(categories, ((ClientLibrariesImpl)clientlibs).getCategoriesFromComponents());
     }
 
@@ -291,6 +299,7 @@ class ClientLibrariesImplTest {
         Set<String> categories = new HashSet<>();
         categories.add(TEASER_CATEGORY);
         categories.add(ACCORDION_CATEGORY);
+        categories.add(MULTIPLE_CATEGORY);
         assertEquals(categories, ((ClientLibrariesImpl)clientlibs).getCategoriesFromComponents());
     }
 
@@ -335,12 +344,12 @@ class ClientLibrariesImplTest {
     void testGetCategoriesWithInjectedResourceType() {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put("resourceTypes", new HashSet<String>() {{
-            add("core/wcm/components/accordion/v1/accordion");
+            add("core/wcm/components/teaser/v1/teaser");
         }});
         ClientLibraries clientlibs = getClientLibrariesUnderTest(ROOT_PAGE, attributes);
         StringBuilder includes = new StringBuilder();
-        includes.append(jsIncludes.get(ACCORDION_CATEGORY));
-        includes.append(cssIncludes.get(ACCORDION_CATEGORY));
+        includes.append(jsIncludes.get(TEASER_CATEGORY));
+        includes.append(cssIncludes.get(TEASER_CATEGORY));
         assertEquals(includes.toString(), clientlibs.getJsAndCssIncludes());
     }
 
@@ -355,6 +364,36 @@ class ClientLibrariesImplTest {
         jsInline.append(jsInlines.get(CAROUSEL_CATEGORY));
         assertEquals(jsInline.toString(), clientlibs.getJsInline());
     }
+
+    @Test
+    void testGetCategoriesWithMultipleClientlibCategoriesAndMultipleComponents() {
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put("resourceTypes", new HashSet<String>() {{
+            add("core/wcm/components/accordion/v1/accordion");
+            add("core/wcm/components/carousel/v1/carousel");
+        }});
+        attributes.put("filter", ".*multiple.*");
+        ClientLibraries clientlibs = getClientLibrariesUnderTest(ROOT_PAGE, attributes);
+        StringBuilder includes = new StringBuilder();
+        includes.append(jsIncludes.get(MULTIPLE_CATEGORY));
+        includes.append(cssIncludes.get(MULTIPLE_CATEGORY));
+        assertEquals(includes.toString(), clientlibs.getJsAndCssIncludes());
+    }
+
+    @Test
+    void testGetCategoriesWithMultipleClientlibCategoriesAndSingleComponent() {
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put("resourceTypes", new HashSet<String>() {{
+            add("core/wcm/components/accordion/v1/accordion");
+        }});
+        attributes.put("filter", ".*multiple.*");
+        ClientLibraries clientlibs = getClientLibrariesUnderTest(ROOT_PAGE, attributes);
+        StringBuilder includes = new StringBuilder();
+        includes.append(jsIncludes.get(ACCORDION_CATEGORY));
+        includes.append(cssIncludes.get(ACCORDION_CATEGORY));
+        assertEquals(includes.toString(), clientlibs.getJsAndCssIncludes());
+    }
+
 
     @Test
     void testGetCssInline() {
