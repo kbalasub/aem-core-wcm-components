@@ -27,4 +27,5 @@
     <sly data-sly-test="${clientLibCategoriesJsHead}" data-sly-call="${clientlib.js @ categories=clientLibCategoriesJsHead}"></sly>
     <sly data-sly-test="${clientLibCategories}" data-sly-call="${clientlib.css @ categories=clientLibCategories}"></sly>
     <link data-sly-test="${staticDesignPath}" href="${staticDesignPath}" rel="stylesheet" type="text/css" />
-</template>
+    <link data-sly-test="${caconfig['com.adobe.cq.wcm.SiteConfig'].themeStylePath}" href="${caconfig['com.adobe.cq.wcm.SiteConfig'].themeStylePath}" rel="stylesheet" type="text/css" />
+  </template>
