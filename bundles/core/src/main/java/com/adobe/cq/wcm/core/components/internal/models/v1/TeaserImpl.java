@@ -126,6 +126,9 @@ public class TeaserImpl extends AbstractImageDelegatingModel implements Teaser {
                 ListItem firstAction = actions.get(0);
                 if (firstAction != null) {
                     targetPage = pageManager.getPage(firstAction.getPath());
+                    if (targetPage == null) {
+                        linkURL = firstAction.getURL();
+                    }
                 }
             }
         } else {
@@ -146,7 +149,6 @@ public class TeaserImpl extends AbstractImageDelegatingModel implements Teaser {
                     title = StringUtils.defaultIfEmpty(targetPage.getPageTitle(), targetPage.getTitle());
                 } else if (actionsEnabled && !actions.isEmpty()) {
                     title = actions.get(0).getTitle();
-                    linkURL = actions.get(0).getURL();
                 } else {
                     title = null;
                 }
