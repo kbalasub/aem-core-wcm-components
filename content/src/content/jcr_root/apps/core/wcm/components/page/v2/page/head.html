@@ -24,7 +24,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <sly data-sly-use.pwa="com.adobe.cq.wcm.core.components.models.PWA" data-sly-test="${pwa.pWAEnabled}">
-        <link rel="manifest" href="/content/wknd/jcr:content/manifest.webmanifest" crossorigin="use-credentials"/>
+        <link rel="manifest" href="/content/${pwa.projectName}/jcr:content/manifest.webmanifest" crossorigin="use-credentials"/>
     </sly>
 
     <sly data-sly-include="head.links.html"></sly>
