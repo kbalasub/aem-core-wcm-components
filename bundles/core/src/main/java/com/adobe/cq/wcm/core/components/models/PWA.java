@@ -23,8 +23,12 @@ public interface PWA {
      * @return whether PWA is enabled or not
      * @since com.adobe.cq.wcm.core.components.models 12.16.0
      */
-     default boolean isPWAEnabled() { return false; };
+     default boolean isPWAEnabled() { throw new UnsupportedOperationException("Not Implemented"); };
 
-     default String getProjectName() { return ""; };
+     default String getProjectName() { return null; };
+
+     default String getManifestPath() { return null; }
+
+     default String getServiceWorkerPath() { return null; }
 
 }
