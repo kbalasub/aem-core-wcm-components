@@ -17,85 +17,52 @@
 package com.adobe.cq.wcm.core.components.internal.models.v2;
 
 import javax.annotation.Nonnull;
-import javax.inject.Inject;
 
-import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.models.annotations.Model;
 import org.apache.sling.models.annotations.injectorspecific.Self;
 
-import org.apache.sling.caconfig.resource.ConfigurationResourceResolver;
-
 import com.adobe.cq.wcm.core.components.models.PWA;
+import com.day.cq.commons.jcr.JcrConstants;
 
-@Model(adaptables = SlingHttpServletRequest.class,
+@Model(adaptables = Resource.class,
     adapters = {PWA.class})
 public class PWAImpl implements PWA {
 
-    @Inject
-    private ConfigurationResourceResolver configurationResourceResolver;
-
-    static final String CACONFIG_BUCKET = "settings";
-    static final String CACONFIG_CONFIGNAME = "wcm";
-    static final String CACONFIG_PWACONFIG = "pwa";
     static final String MANIFEST_NAME = "manifest.webmanifest";
 
-    /**
-     * The current request.
-     */
     @Self
-    protected SlingHttpServletRequest request;
+    private Resource resource;
 
     @Override
     public boolean isPWAEnabled() {
-        Resource resource = request.getResource();
         String projectPath = this.getSitesProjectPath(resource.getPath());
-        Resource project = resource.getResourceResolver().getResource(projectPath + "/jcr:content");
+        Resource project = resource.getResourceResolver().getResource(projectPath + JcrConstants.JCR_CONTENT);
 
         if (project == null) {
             return false;
         }
 
         ValueMap valueMap = project.getValueMap();
-        Boolean isEnabled = valueMap.get("enablePWA", Boolean.class);
-        return isEnabled;
+        return valueMap.get("enablePWA", Boolean.class);
     }
 
     @Override
     public String getProjectName() {
-        Resource resource = request.getResource();
         String projectPath = this.getSitesProjectPath(resource.getPath());
         String[] levels = projectPath.split("/");
-        if (levels.length > 0) {
-            return levels[levels.length - 1];
-        }
-        return "";
+        return levels[levels.length - 1];
     }
 
     @Override
     public String getManifestPath() {
-        Resource contextAwareConfig = getContextAwareConfiguration(request.getResource());
-        if (contextAwareConfig == null) {
-            return "";
-        }
-        Resource manifest = contextAwareConfig.getResourceResolver().getResource(contextAwareConfig.getPath() + "/" + CACONFIG_PWACONFIG + "/" + MANIFEST_NAME);
-        return (manifest != null) ? manifest.getPath() : "";
+        return this.getSitesProjectPath(resource.getPath()) + MANIFEST_NAME;
     }
 
     @Override
     public String getServiceWorkerPath() {
         return "/" + this.getProjectName() + "sw.js";
-    }
-
-    private Resource getContextAwareConfiguration(Resource requestedResource) {
-        Resource resource = request.getResource();
-        String projectPath = this.getSitesProjectPath(resource.getPath());
-        Resource project = resource.getResourceResolver().getResource(projectPath + "/jcr:content");
-        if (project == null) {
-            return null;
-        }
-        return configurationResourceResolver.getResource(project, CACONFIG_BUCKET, CACONFIG_CONFIGNAME);
     }
 
     @Nonnull
