@@ -16,8 +16,6 @@
 
 package com.adobe.cq.wcm.core.components.internal.models.v2;
 
-import java.lang.reflect.Field;
-
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
@@ -33,6 +31,7 @@ import com.day.cq.commons.jcr.JcrConstants;
 import io.wcm.testing.mock.aem.junit.AemContext;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class PWAImplTest {
@@ -42,6 +41,7 @@ public class PWAImplTest {
     private ResourceResolver resolver;
     private MockHelper mockHelper;
     private PWA pwa;
+    private Resource resource;
     private ModifiableValueMap mvp;
 
     @ClassRule
@@ -49,70 +49,61 @@ public class PWAImplTest {
 
     @Before
     public void setUp() {
-        ResourceResolver resolver = context.resourceResolver();
-        Resource resource = resolver.getResource(SITES_PAGE_PATH);
+        resolver = context.resourceResolver();
+        resource = spy(resolver.getResource(SITES_PAGE_PATH));
         mvp = resource.adaptTo(ModifiableValueMap.class);
-        pwa = resource.adaptTo(PWA.class);
     }
 
     @Test
     public void testPWAReturnsManifestPath() {
+        pwa = resource.adaptTo(PWA.class);
         Assert.assertEquals(SITES_PROJECT_PATH + "/manifest.webmanifest", pwa.getManifestPath());
     }
 
     @Test
     public void testPWAReturnsProjectName() {
+        pwa = resource.adaptTo(PWA.class);
         Assert.assertEquals("mysite", pwa.getProjectName());
     }
 
     @Test
     public void testProjectNameReturnsBlankIfResourceIsNotUnderSitesProject() throws NoSuchFieldException, IllegalAccessException {
-        Resource mockResource = mock(Resource.class);
-        when(mockResource.getPath()).thenReturn("/");
-        Field field = PWAImpl.class.getDeclaredField("resource");
-        field.setAccessible(true);
-        field.set(pwa, mockResource);
-
+        when(resource.getPath()).thenReturn("/");
+        pwa = resource.adaptTo(PWA.class);
         Assert.assertEquals("", pwa.getProjectName());
     }
 
     @Test
     public void testReturnsProjectNameIfResourceIsSitesProject() throws NoSuchFieldException, IllegalAccessException {
-        Resource mockResource = mock(Resource.class);
-        when(mockResource.getPath()).thenReturn("/foo/bar");
-        Field field = PWAImpl.class.getDeclaredField("resource");
-        field.setAccessible(true);
-        field.set(pwa, mockResource);
-
+        when(resource.getPath()).thenReturn("/foo/bar");
+        pwa = resource.adaptTo(PWA.class);
         Assert.assertEquals("bar", pwa.getProjectName());
     }
 
     @Test
     public void testPWAReturnsServiceWorkerPath() {
+        pwa = resource.adaptTo(PWA.class);
         Assert.assertEquals("/mysitesw.js", pwa.getServiceWorkerPath());
     }
 
     @Test
     public void testPWAReturnsFalseIfPWAOptionIsNotEnabled() {
+        pwa = resource.adaptTo(PWA.class);
         Assert.assertFalse(pwa.isPWAEnabled());
     }
 
     @Test
     public void testPWAReturnsTrueIfPWAOptionIsNotEnabled() throws NoSuchFieldException, IllegalAccessException {
-        Resource mockResource = mock(Resource.class);
-        when(mockResource.getPath()).thenReturn("/foo/bar/baz");
-        ResourceResolver mockResolver = mock(ResourceResolver.class);
-        when(mockResource.getResourceResolver()).thenReturn(mockResolver);
+        when(resource.getPath()).thenReturn("/foo/bar/baz");
+        ResourceResolver spyResolver = spy(resolver);
+        when(resource.getResourceResolver()).thenReturn(spyResolver);
         Resource mockSitesProject = mock(Resource.class);
-        when(mockResolver.getResource("/foo/bar/" + JcrConstants.JCR_CONTENT)).thenReturn(mockSitesProject);
+        when(spyResolver.getResource("/foo/bar/" + JcrConstants.JCR_CONTENT)).thenReturn(mockSitesProject);
 
         mvp.put("enablePWA", true);
         when(mockSitesProject.getValueMap()).thenReturn(mvp);
 
-        Field field = PWAImpl.class.getDeclaredField("resource");
-        field.setAccessible(true);
-        field.set(pwa, mockResource);
-
+        pwa = resource.adaptTo(PWA.class);
         Assert.assertTrue(pwa.isPWAEnabled());
     }
 }

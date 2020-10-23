@@ -17,6 +17,7 @@
 package com.adobe.cq.wcm.core.components.internal.models.v2;
 
 import javax.annotation.Nonnull;
+import javax.annotation.PostConstruct;
 
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
@@ -32,37 +33,48 @@ public class PWAImpl implements PWA {
 
     static final String MANIFEST_NAME = "manifest.webmanifest";
 
+    private boolean isPWAEnabled = false;
+    private String projectName = "";
+    private String manifestPath = "";
+    private String serviceWorkerPath = "";
+
     @Self
     private Resource resource;
 
-    @Override
-    public boolean isPWAEnabled() {
+    @PostConstruct
+    protected void initModel() {
         String projectPath = this.getSitesProjectPath(resource.getPath());
         Resource project = resource.getResourceResolver().getResource(projectPath + JcrConstants.JCR_CONTENT);
 
-        if (project == null) {
-            return false;
+        if (project != null) {
+            ValueMap valueMap = project.getValueMap();
+            this.isPWAEnabled = valueMap.get("enablePWA", Boolean.class);
         }
 
-        ValueMap valueMap = project.getValueMap();
-        return valueMap.get("enablePWA", Boolean.class);
+        String[] levels = projectPath.split("/");
+        this.projectName = levels[levels.length - 1];
+        this.manifestPath = projectPath + MANIFEST_NAME;
+        this.serviceWorkerPath = "/" + this.projectName + "sw.js";
+    }
+
+    @Override
+    public boolean isPWAEnabled() {
+        return this.isPWAEnabled;
     }
 
     @Override
     public String getProjectName() {
-        String projectPath = this.getSitesProjectPath(resource.getPath());
-        String[] levels = projectPath.split("/");
-        return levels[levels.length - 1];
+        return this.projectName;
     }
 
     @Override
     public String getManifestPath() {
-        return this.getSitesProjectPath(resource.getPath()) + MANIFEST_NAME;
+        return this.manifestPath;
     }
 
     @Override
     public String getServiceWorkerPath() {
-        return "/" + this.getProjectName() + "sw.js";
+        return this.serviceWorkerPath;
     }
 
     @Nonnull
