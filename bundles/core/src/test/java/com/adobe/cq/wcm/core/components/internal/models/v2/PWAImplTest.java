@@ -19,36 +19,38 @@ package com.adobe.cq.wcm.core.components.internal.models.v2;
 import org.apache.sling.api.resource.ModifiableValueMap;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.testing.resourceresolver.MockHelper;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.adobe.cq.wcm.core.components.context.CoreComponentTestContext;
 import com.adobe.cq.wcm.core.components.models.PWA;
 import com.day.cq.commons.jcr.JcrConstants;
-import io.wcm.testing.mock.aem.junit.AemContext;
+import io.wcm.testing.mock.aem.junit5.AemContext;
+import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(AemContextExtension.class)
 public class PWAImplTest {
 
     private static final String SITES_PROJECT_PATH = "/content/mysite";
     private static final String SITES_PAGE_PATH = "/content/mysite/us/en";
     private ResourceResolver resolver;
-    private MockHelper mockHelper;
     private PWA pwa;
     private Resource resource;
     private ModifiableValueMap mvp;
 
-    @ClassRule
-    public static final AemContext context = CoreComponentTestContext.createContext("/pwa", SITES_PAGE_PATH);
+    protected final AemContext context = CoreComponentTestContext.newAemContext();
 
-    @Before
+    @BeforeEach
     public void setUp() {
+        context.load().json("/pwa" + CoreComponentTestContext.TEST_CONTENT_JSON, SITES_PAGE_PATH);
         resolver = context.resourceResolver();
         resource = spy(resolver.getResource(SITES_PAGE_PATH));
         mvp = resource.adaptTo(ModifiableValueMap.class);
@@ -57,39 +59,39 @@ public class PWAImplTest {
     @Test
     public void testPWAReturnsManifestPath() {
         pwa = resource.adaptTo(PWA.class);
-        Assert.assertEquals(SITES_PROJECT_PATH + "/manifest.webmanifest", pwa.getManifestPath());
+        assertEquals(SITES_PROJECT_PATH + "/manifest.webmanifest", pwa.getManifestPath());
     }
 
     @Test
     public void testPWAReturnsProjectName() {
         pwa = resource.adaptTo(PWA.class);
-        Assert.assertEquals("mysite", pwa.getProjectName());
+        assertEquals("mysite", pwa.getProjectName());
     }
 
     @Test
     public void testProjectNameReturnsBlankIfResourceIsNotUnderSitesProject() throws NoSuchFieldException, IllegalAccessException {
         when(resource.getPath()).thenReturn("/");
         pwa = resource.adaptTo(PWA.class);
-        Assert.assertEquals("", pwa.getProjectName());
+        assertEquals("", pwa.getProjectName());
     }
 
     @Test
     public void testReturnsProjectNameIfResourceIsSitesProject() throws NoSuchFieldException, IllegalAccessException {
         when(resource.getPath()).thenReturn("/foo/bar");
         pwa = resource.adaptTo(PWA.class);
-        Assert.assertEquals("bar", pwa.getProjectName());
+        assertEquals("bar", pwa.getProjectName());
     }
 
     @Test
     public void testPWAReturnsServiceWorkerPath() {
         pwa = resource.adaptTo(PWA.class);
-        Assert.assertEquals("/mysitesw.js", pwa.getServiceWorkerPath());
+        assertEquals("/mysitesw.js", pwa.getServiceWorkerPath());
     }
 
     @Test
     public void testPWAReturnsFalseIfPWAOptionIsNotEnabled() {
         pwa = resource.adaptTo(PWA.class);
-        Assert.assertFalse(pwa.isPWAEnabled());
+        assertFalse(pwa.isPWAEnabled());
     }
 
     @Test
@@ -104,6 +106,6 @@ public class PWAImplTest {
         when(mockSitesProject.getValueMap()).thenReturn(mvp);
 
         pwa = resource.adaptTo(PWA.class);
-        Assert.assertTrue(pwa.isPWAEnabled());
+        assertTrue(pwa.isPWAEnabled());
     }
 }
