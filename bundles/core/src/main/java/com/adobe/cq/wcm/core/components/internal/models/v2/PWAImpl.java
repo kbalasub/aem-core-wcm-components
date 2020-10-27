@@ -48,7 +48,8 @@ public class PWAImpl implements PWA {
 
         if (project != null) {
             ValueMap valueMap = project.getValueMap();
-            this.isPWAEnabled = valueMap.get("enablePWA", Boolean.class);
+            Boolean isPWAEnabled = valueMap.get("enablePWA", Boolean.class);
+            this.isPWAEnabled = (isPWAEnabled != null) ? isPWAEnabled : false;
         }
 
         String[] levels = projectPath.split("/");
