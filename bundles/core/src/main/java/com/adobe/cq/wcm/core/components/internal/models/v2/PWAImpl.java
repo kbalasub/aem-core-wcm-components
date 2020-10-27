@@ -84,11 +84,11 @@ public class PWAImpl implements PWA {
 
         if (levels.length < 3) {
             return "";
-        };
+        }
 
         if (levels.length == 3) {
             return path;
-        };
+        }
 
         int i = 0;
         StringBuilder projectPath = new StringBuilder();
