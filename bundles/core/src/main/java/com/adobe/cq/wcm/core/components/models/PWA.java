@@ -21,7 +21,7 @@ public interface PWA {
      * Returns true if PWA features are enabled false otherwise
      *
      * @return whether PWA is enabled or not
-     * @since com.adobe.cq.wcm.core.components.models 12.16.0
+     * @since com.adobe.cq.wcm.core.components.models 12.17.0
      */
      default boolean isPWAEnabled() { throw new UnsupportedOperationException("Not Implemented"); };
 
