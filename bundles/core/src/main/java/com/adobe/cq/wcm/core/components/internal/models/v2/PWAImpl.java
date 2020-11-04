@@ -32,11 +32,13 @@ import com.day.cq.commons.jcr.JcrConstants;
 public class PWAImpl implements PWA {
 
     static final String MANIFEST_NAME = "manifest.webmanifest";
+    static final int SITES_PROJECT_LEVEL = 3;
 
     private boolean isPWAEnabled = false;
     private String projectName = "";
     private String manifestPath = "";
     private String serviceWorkerPath = "";
+    private String themecolor = "";
 
     @Self
     private Resource resource;
@@ -50,6 +52,7 @@ public class PWAImpl implements PWA {
             ValueMap valueMap = project.getValueMap();
             Boolean isPWAEnabled = valueMap.get("enablePWA", Boolean.class);
             this.isPWAEnabled = (isPWAEnabled != null) ? isPWAEnabled : false;
+            this.themecolor = colorToHex(valueMap.get("themecolor", ""));
         }
 
         String[] levels = projectPath.split("/");
@@ -69,6 +72,11 @@ public class PWAImpl implements PWA {
     }
 
     @Override
+    public String getThemecolor() {
+        return this.themecolor;
+    }
+
+    @Override
     public String getManifestPath() {
         return this.manifestPath;
     }
@@ -82,21 +90,55 @@ public class PWAImpl implements PWA {
     private String getSitesProjectPath(String path) {
         String[] levels = path.split("/");
 
-        if (levels.length < 3) {
+        if (levels.length < SITES_PROJECT_LEVEL) {
             return "";
         }
 
-        if (levels.length == 3) {
+        if (levels.length == SITES_PROJECT_LEVEL) {
             return path;
         }
 
         int i = 0;
         StringBuilder projectPath = new StringBuilder();
-        while (i < 3) {
+        while (i < SITES_PROJECT_LEVEL) {
             projectPath.append(levels[i]).append('/');
             i++;
         }
 
         return projectPath.toString();
     }
+
+    private String colorToHex(String color) {
+        if (color == null || color.length() == 0) {
+            return "";
+        }
+
+        if (color.startsWith("#")) {
+            return color;
+        }
+
+        if (!color.startsWith("rgb")) {
+            return "";
+        }
+
+        try {
+            String[] parts = color.split(",");
+            String r = Integer.toHexString(Integer.parseInt(parts[0].substring(parts[0].indexOf("(") + 1)));
+            String g = Integer.toHexString(Integer.parseInt(parts[1]));
+            String b;
+
+            if (color.startsWith("rgba")) {
+                b = Integer.toHexString(Integer.parseInt(parts[2]));
+            }
+            else {
+                b = Integer.toHexString(Integer.parseInt(parts[2].substring(0, parts[2].indexOf(")"))));
+            }
+
+            return "#" + (r.length() == 2 ? r : "0" + r) + (g.length() == 2 ? g : "0" + g) + (b.length() == 2 ? b : "0" + b);
+        }
+        catch(ArrayIndexOutOfBoundsException | NumberFormatException e) {
+            return "";
+        }
+    }
+
 }

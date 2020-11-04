@@ -25,6 +25,7 @@
 
     <sly data-sly-use.pwa="com.adobe.cq.wcm.core.components.models.PWA" data-sly-test="${pwa.pWAEnabled}">
         <link rel="manifest" href="${pwa.manifestPath}" crossorigin="use-credentials"/>
+        <meta name="theme-color" content="${pwa.themecolor}"/>
     </sly>
     <sly data-sly-include="head.links.html"></sly>
     <sly data-sly-include="head.socialmedia.html"></sly>

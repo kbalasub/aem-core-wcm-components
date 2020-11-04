@@ -16,6 +16,9 @@
 
 package com.adobe.cq.wcm.core.components.models;
 
+/**
+ * Interface for reading progressive web apps configuration
+ */
 public interface PWA {
     /**
      * Returns true if PWA features are enabled false otherwise
@@ -23,12 +26,38 @@ public interface PWA {
      * @return whether PWA is enabled or not
      * @since com.adobe.cq.wcm.core.components.models 12.17.0
      */
-     default boolean isPWAEnabled() { throw new UnsupportedOperationException("Not Implemented"); };
+    default boolean isPWAEnabled() { throw new UnsupportedOperationException("Not Implemented"); };
 
-     default String getProjectName() { return null; };
+    /**
+     * The name of the sites project for this site
+     *
+     * @return A String that represents the name of the sites project for this site
+     * @since com.adobe.cq.wcm.core.components.models 12.17.0
+     */
+    default String getProjectName() { throw new UnsupportedOperationException("Not Implemented"); };
 
-     default String getManifestPath() { return null; }
+    /**
+     * The theme color of the site sometimes used to color the address bar of the browser
+     *
+     * @return A Hex String that represents the theme color for this site
+     * @since com.adobe.cq.wcm.core.components.models 12.17.0
+     */
+    default String getThemecolor() { throw new UnsupportedOperationException("Not Implemented"); };
 
-     default String getServiceWorkerPath() { return null; }
+    /**
+     * The relative path to the web manifest
+     *
+     * @return A String that represents the relative path to the web manifest of this site
+     * @since com.adobe.cq.wcm.core.components.models 12.17.0
+     */
+    default String getManifestPath() { throw new UnsupportedOperationException("Not Implemented"); }
+
+    /**
+     * The relative path to the web manifest
+     *
+     * @return A String that represents the relative path to the web manifest of this site
+     * @since com.adobe.cq.wcm.core.components.models 12.17.0
+     */
+    default String getServiceWorkerPath() { throw new UnsupportedOperationException("Not Implemented"); }
 
 }
