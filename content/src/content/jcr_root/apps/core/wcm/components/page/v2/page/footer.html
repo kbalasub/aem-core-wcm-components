@@ -13,7 +13,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/-->
-<template data-sly-template.footer="${ @ page}">
+<template data-sly-template.footer="${ @ page, pwa }">
     <sly data-sly-use.clientlib="/libs/granite/sightly/templates/clientlib.html"
          data-sly-test.clientlibCategoriesJsBody="${page.clientLibCategoriesJsBody}"
          data-sly-call="${clientlib.js @ categories=clientlibCategoriesJsBody}"></sly>
@@ -24,7 +24,7 @@
     <sly data-sly-list="${page.htmlPageItems}"><script data-sly-test="${item.location.name == 'footer'}"
             data-sly-element="${item.element.name @ context='unsafe'}" data-sly-attribute="${item.attributes}"></script>
     </sly>
-    <sly data-sly-use.pwa="com.adobe.cq.wcm.core.components.models.PWA" data-sly-test="${pwa.pWAEnabled}">
+    <sly data-sly-test="${pwa.pWAEnabled}">
         <script>
             // Check that service workers are supported
             if ('serviceWorker' in navigator) {
