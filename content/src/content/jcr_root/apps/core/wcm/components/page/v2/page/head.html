@@ -26,6 +26,7 @@
     <sly data-sly-test="${pwa.pWAEnabled}">
         <link rel="manifest" href="${pwa.manifestPath}" crossorigin="use-credentials"/>
         <meta name="theme-color" content="${pwa.themecolor}"/>
+        <link rel="apple-touch-icon" href="${pwa.iconPath}"/>
     </sly>
     <sly data-sly-include="head.links.html"></sly>
     <sly data-sly-include="head.socialmedia.html"></sly>

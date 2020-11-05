@@ -45,6 +45,14 @@ public interface PWA {
     default String getThemecolor() { throw new UnsupportedOperationException("Not Implemented"); };
 
     /**
+     * The path to the icon of this PWA
+     *
+     * @return A String that represents the relative path to the icon of this site
+     * @since com.adobe.cq.wcm.core.components.models 12.17.0
+     */
+    default String getIconPath() { throw new UnsupportedOperationException("Not Implemented"); };
+
+    /**
      * The relative path to the web manifest
      *
      * @return A String that represents the relative path to the web manifest of this site

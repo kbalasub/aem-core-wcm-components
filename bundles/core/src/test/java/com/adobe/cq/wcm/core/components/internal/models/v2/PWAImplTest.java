@@ -110,6 +110,21 @@ public class PWAImplTest {
     }
 
     @Test
+    public void testPWAReturnsIconPath() {
+        when(resource.getPath()).thenReturn("/foo/bar/baz");
+        ResourceResolver spyResolver = spy(resolver);
+        when(resource.getResourceResolver()).thenReturn(spyResolver);
+        Resource mockSitesProject = mock(Resource.class);
+        when(spyResolver.getResource("/foo/bar/" + JcrConstants.JCR_CONTENT)).thenReturn(mockSitesProject);
+
+        mvp.put("pwaicon", "/content/dam/foo.png");
+        when(mockSitesProject.getValueMap()).thenReturn(mvp);
+
+        pwa = resource.adaptTo(PWA.class);
+        assertEquals("/content/dam/foo.png", pwa.getIconPath());
+    }
+
+    @Test
     public void testPWAReturnsThemeColor() {
         when(resource.getPath()).thenReturn("/foo/bar/baz");
         ResourceResolver spyResolver = spy(resolver);
