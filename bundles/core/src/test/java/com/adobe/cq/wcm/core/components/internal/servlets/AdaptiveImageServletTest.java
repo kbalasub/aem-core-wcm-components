@@ -27,38 +27,39 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.HttpStatus;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.servlets.HttpConstants;
+import org.apache.sling.commons.metrics.Timer;
 import org.apache.sling.testing.mock.sling.servlet.MockRequestPathInfo;
 import org.apache.sling.testing.mock.sling.servlet.MockSlingHttpServletRequest;
 import org.apache.sling.testing.mock.sling.servlet.MockSlingHttpServletResponse;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
 
+import com.adobe.cq.wcm.core.components.Utils;
 import com.adobe.cq.wcm.core.components.internal.models.v1.AbstractImageTest;
 import com.adobe.cq.wcm.core.components.internal.models.v1.ImageImpl;
+import com.adobe.cq.wcm.core.components.models.Image;
 import com.day.cq.dam.api.Rendition;
 import com.day.cq.dam.api.handler.AssetHandler;
 import com.day.cq.dam.api.handler.store.AssetStore;
 import com.day.cq.dam.commons.handler.StandardImageHandler;
 import com.day.image.Layer;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
-import uk.org.lidalia.slf4jtest.TestLogger;
-import uk.org.lidalia.slf4jtest.TestLoggerFactory;
 
-import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static uk.org.lidalia.slf4jtest.LoggingEvent.warn;
 
 @ExtendWith(AemContextExtension.class)
 class AdaptiveImageServletTest extends AbstractImageTest {
@@ -73,10 +74,10 @@ class AdaptiveImageServletTest extends AbstractImageTest {
     protected static final String PNG_RECTANGLE_ASSET_PATH = "/content/dam/core/images/" + PNG_IMAGE_RECTANGLE_BINARY_NAME;
     protected static final String PNG_IMAGE_SMALL_BINARY_NAME = "Adobe_Systems_logo_and_wordmark_small.png";
     protected static final String PNG_SMALL_ASSET_PATH = "/content/dam/core/images/" + PNG_IMAGE_SMALL_BINARY_NAME;
-    private TestLogger testLogger;
+    private Logger testLogger;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setUp() throws Exception {
         internalSetUp(TEST_BASE);
         context.load().binaryFile("/image/" + PNG_IMAGE_RECTANGLE_BINARY_NAME, PNG_RECTANGLE_ASSET_PATH + "/jcr:content/renditions/original");
         context.load().binaryFile("/image/" + "cq5dam.web.1280.1280_" + PNG_IMAGE_BINARY_NAME, PNG_RECTANGLE_ASSET_PATH +
@@ -87,20 +88,21 @@ class AdaptiveImageServletTest extends AbstractImageTest {
         resourceResolver = context.resourceResolver();
         AssetHandler assetHandler = mock(AssetHandler.class);
         AssetStore assetStore = mock(AssetStore.class);
+        AdaptiveImageServletMetrics metrics = mock(AdaptiveImageServletMetrics.class);
+        when(metrics.startDurationRecording()).thenReturn(mock(Timer.Context.class));
         when(assetStore.getAssetHandler(anyString())).thenReturn(assetHandler);
         when(assetHandler.getImage(any(Rendition.class))).thenAnswer(invocation -> {
             Rendition rendition = invocation.getArgument(0);
             return ImageIO.read(rendition.getStream());
         });
-        servlet = new AdaptiveImageServlet(mockedMimeTypeService, assetStore, ADAPTIVE_IMAGE_SERVLET_DEFAULT_RESIZE_WIDTH, AdaptiveImageServlet.DEFAULT_MAX_SIZE);
-        testLogger = TestLoggerFactory.getTestLogger(AdaptiveImageServlet.class);
+        servlet = new AdaptiveImageServlet(mockedMimeTypeService, assetStore, metrics, ADAPTIVE_IMAGE_SERVLET_DEFAULT_RESIZE_WIDTH, AdaptiveImageServlet.DEFAULT_MAX_SIZE);
+        testLogger = Utils.mockLogger(AdaptiveImageServlet.class, "LOGGER");
     }
 
     @AfterEach
     void tearDown() {
         resourceResolver = null;
         servlet = null;
-        TestLoggerFactory.clear();
     }
 
     @Test
@@ -325,8 +327,8 @@ class AdaptiveImageServletTest extends AbstractImageTest {
         Dimension actualDimension = new Dimension(image.getWidth(), image.getHeight());
         Assertions.assertEquals(expectedDimension, actualDimension, "Expected image rendered at requested size.");
         Assertions.assertEquals("image/png", response.getContentType(), "Expected a PNG image.");
-        MatcherAssert.assertThat(testLogger.getLoggingEvents(), hasItem(warn("One of the configured widths ({}) from the {} content policy is not a " +
-                "valid Integer.", "invalid", "/conf/$aem-mock$/settings/wcm/policies/core/wcm/components/image/v1/image/$mock-policy")));
+        verify(testLogger, times(1)).warn("One of the configured widths ({}) from the {} content policy is not a " +
+                "valid Integer.", "invalid", "/conf/$aem-mock$/settings/wcm/policies/core/wcm/components/image/v1/image/$mock-policy");
     }
 
     @Test
@@ -586,6 +588,16 @@ class AdaptiveImageServletTest extends AbstractImageTest {
     }
 
     @Test
+    void testFileReferenceNonexistingAsset() throws Exception {
+        Pair<MockSlingHttpServletRequest, MockSlingHttpServletResponse> requestResponsePair = prepareRequestResponsePair(IMAGE30_PATH,
+                "img", "png");
+        MockSlingHttpServletRequest request = requestResponsePair.getLeft();
+        MockSlingHttpServletResponse response = requestResponsePair.getRight();
+        servlet.doGet(request, response);
+        Assertions.assertEquals(HttpServletResponse.SC_NOT_FOUND, response.getStatus());
+    }
+
+    @Test
     void testDifferentSuffixExtension() throws IOException {
         Pair<MockSlingHttpServletRequest, MockSlingHttpServletResponse> requestResponsePair =
                 prepareRequestResponsePair(IMAGE3_PATH, 1490005239000L, "img.600", "png", "jpeg");
@@ -692,6 +704,26 @@ class AdaptiveImageServletTest extends AbstractImageTest {
                 IOException.class,
                 () -> servlet.doGet(request, response),
                 "Expecting to throw an exception complaining that dimensions are too large");
+    }
+
+    @Test
+    void testTransparentImage() throws IOException {
+        Pair<MockSlingHttpServletRequest, MockSlingHttpServletResponse> requestResponsePair = prepareRequestResponsePair(IMAGE29_PATH,
+                1607501105000L, "coreimg.80.1500", "jpeg");
+        MockSlingHttpServletRequest request = requestResponsePair.getLeft();
+        MockSlingHttpServletResponse response = requestResponsePair.getRight();
+        context.contentPolicyMapping(ImageImpl.RESOURCE_TYPE,
+                Image.PN_DESIGN_ALLOWED_RENDITION_WIDTHS, new String[] {"1500"},
+                Image.PN_DESIGN_JPEG_QUALITY, 80);
+        servlet.doGet(request, response);
+        Assertions.assertEquals(HttpStatus.SC_OK, response.getStatus());
+        Layer responseImage = new Layer(new ByteArrayInputStream(response.getOutput()));
+        Assertions.assertEquals(1500, responseImage.getWidth());
+        for (int x = 0; x < responseImage.getWidth(); x++) {
+            for (int y = 0; y < responseImage.getHeight(); y++) {
+                Assertions.assertEquals(Color.white.getRGB(), responseImage.getPixel(x, y), "Expected white background");
+            }
+        }
     }
 
     private void testNegativeRequestedWidth(String imagePath) throws IOException {

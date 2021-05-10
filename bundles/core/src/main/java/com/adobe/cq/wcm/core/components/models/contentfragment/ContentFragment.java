@@ -15,6 +15,7 @@
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 package com.adobe.cq.wcm.core.components.models.contentfragment;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
@@ -22,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 import com.adobe.cq.export.json.ComponentExporter;
 import com.adobe.cq.export.json.ContainerExporter;
+import com.adobe.cq.wcm.core.components.models.Component;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
@@ -30,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  *
  * @since com.adobe.cq.wcm.core.components.models.contentfragment 1.0.0
  */
-public interface ContentFragment extends DAMContentFragment, ContainerExporter {
+public interface ContentFragment extends DAMContentFragment, ContainerExporter, Component {
 
     /**
      * Name of the mandatory resource property that stores the path to a content fragment.
@@ -70,7 +72,7 @@ public interface ContentFragment extends DAMContentFragment, ContainerExporter {
     @NotNull
     @JsonIgnore
     default String getGridResourceType() {
-        throw new UnsupportedOperationException();
+        return "";
     }
 
     /**
@@ -81,7 +83,7 @@ public interface ContentFragment extends DAMContentFragment, ContainerExporter {
     @NotNull
     @Override
     default Map<String, ? extends ComponentExporter> getExportedItems() {
-        throw new UnsupportedOperationException();
+        return Collections.emptyMap();
     }
 
     /**
@@ -92,7 +94,7 @@ public interface ContentFragment extends DAMContentFragment, ContainerExporter {
     @NotNull
     @Override
     default String[] getExportedItemsOrder() {
-        throw new UnsupportedOperationException();
+        return new String[]{};
     }
 
     /**
@@ -103,7 +105,7 @@ public interface ContentFragment extends DAMContentFragment, ContainerExporter {
     @NotNull
     @Override
     default String getExportedType() {
-        throw new UnsupportedOperationException();
+        return "";
     }
 
     /**
@@ -114,6 +116,6 @@ public interface ContentFragment extends DAMContentFragment, ContainerExporter {
      */
     @Nullable
     default String[] getParagraphs() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 }

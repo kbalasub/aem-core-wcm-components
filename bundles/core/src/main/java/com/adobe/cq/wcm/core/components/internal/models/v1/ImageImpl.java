@@ -52,7 +52,8 @@ import org.slf4j.LoggerFactory;
 
 import com.adobe.cq.export.json.ComponentExporter;
 import com.adobe.cq.export.json.ExporterConstants;
-import com.adobe.cq.wcm.core.components.internal.Utils;
+import com.adobe.cq.wcm.core.components.commons.link.Link;
+import com.adobe.cq.wcm.core.components.internal.link.LinkHandler;
 import com.adobe.cq.wcm.core.components.internal.servlets.AdaptiveImageServlet;
 import com.adobe.cq.wcm.core.components.models.Image;
 import com.adobe.cq.wcm.core.components.models.datalayer.ImageData;
@@ -82,9 +83,6 @@ public class ImageImpl extends AbstractComponentImpl implements Image {
     protected static final String MIME_TYPE_IMAGE_SVG = "image/svg+xml";
     private static final String MIME_TYPE_IMAGE_PREFIX = "image/";
 
-    @Self
-    protected SlingHttpServletRequest request;
-
     @ScriptVariable
     protected PageManager pageManager;
 
@@ -113,9 +111,9 @@ public class ImageImpl extends AbstractComponentImpl implements Image {
     @Nullable
     protected String title;
 
-    @ValueMapValue(name = ImageResource.PN_LINK_URL, injectionStrategy = InjectionStrategy.OPTIONAL)
-    @Nullable
-    private String linkURL;
+    @Self
+    protected LinkHandler linkHandler;
+    protected Optional<Link> link;
 
     protected String src;
     protected String[] smartImages = new String[]{};
@@ -242,11 +240,9 @@ public class ImageImpl extends AbstractComponentImpl implements Image {
             src += (inTemplate ? Text.escapePath(templateRelativePath) : "") + (lastModifiedDate > 0 ? ("/" + lastModifiedDate +
                 (StringUtils.isNotBlank(imageName) ? ("/" + imageName): "") + DOT + extension) : "");
             if (!isDecorative) {
-                if (StringUtils.isNotEmpty(linkURL)) {
-                    linkURL = Utils.getURL(request, pageManager, linkURL);
-                }
+                link = linkHandler.getLink(resource);
             } else {
-                linkURL = null;
+                link = Optional.empty();
                 alt = null;
             }
             buildJson();
@@ -314,7 +310,7 @@ public class ImageImpl extends AbstractComponentImpl implements Image {
 
     @Override
     public String getLink() {
-        return linkURL;
+        return link == null ? null : link.map(Link::getURL).orElse(null);
     }
 
     @Override
@@ -386,7 +382,7 @@ public class ImageImpl extends AbstractComponentImpl implements Image {
     protected ImageData getComponentData() {
         return DataLayerBuilder.extending(super.getComponentData()).asImageComponent()
             .withTitle(this::getTitle)
-            .withLinkUrl(this::getLink)
+            .withLinkUrl(() -> link.map(Link::getMappedURL).orElse(null))
             .withAssetData(() ->
                 Optional.ofNullable(this.fileReference)
                     .map(reference -> this.request.getResourceResolver().getResource(reference))

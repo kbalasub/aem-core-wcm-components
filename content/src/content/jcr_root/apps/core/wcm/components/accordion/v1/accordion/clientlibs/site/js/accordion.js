@@ -18,6 +18,7 @@
 
     var dataLayerEnabled;
     var dataLayer;
+    var delay = 100;
 
     var NS = "cmp";
     var IS = "accordion";
@@ -115,7 +116,7 @@
                 that._elements["panel"] = Array.isArray(that._elements["panel"]) ? that._elements["panel"] : [that._elements["panel"]];
 
                 // Expand the item based on deep-link-id if it matches with any existing accordion item id
-                var deepLinkItem = CQ.CoreComponents.container.utils.getDeepLinkItem(that, "item");
+                var deepLinkItem = window.CQ.CoreComponents.container.utils.getDeepLinkItem(that, "item");
                 if (deepLinkItem && !deepLinkItem.hasAttribute(dataAttributes.item.expanded)) {
                     setItemExpanded(deepLinkItem, true);
                 }
@@ -154,8 +155,8 @@
                      * - check that the message data panel container type is correct and that the id (path) matches this specific Accordion component
                      * - if so, route the "navigate" operation to enact a navigation of the Accordion based on index data
                      */
-                    CQ.CoreComponents.MESSAGE_CHANNEL = CQ.CoreComponents.MESSAGE_CHANNEL || new window.Granite.author.MessageChannel("cqauthor", window);
-                    CQ.CoreComponents.MESSAGE_CHANNEL.subscribeRequestMessage("cmp.panelcontainer", function(message) {
+                    window.CQ.CoreComponents.MESSAGE_CHANNEL = window.CQ.CoreComponents.MESSAGE_CHANNEL || new window.Granite.author.MessageChannel("cqauthor", window);
+                    window.CQ.CoreComponents.MESSAGE_CHANNEL.subscribeRequestMessage("cmp.panelcontainer", function(message) {
                         if (message.data && message.data.type === "cmp-accordion" && message.data.id === that._elements.self.dataset["cmpPanelcontainerId"]) {
                             if (message.data.operation === "navigate") {
                                 // switch to single expansion mode when navigating in edit mode.
@@ -329,13 +330,13 @@
                     var accordionId = that._elements.self.id;
                     var expandedItems = getExpandedItems()
                         .map(function(item) {
-                            return Object.keys(JSON.parse(item.dataset.cmpDataLayer))[0];
+                            return getDataLayerId(item);
                         });
 
-                    var uploadPayload = {component: {}};
+                    var uploadPayload = { component: {} };
                     uploadPayload.component[accordionId] = { shownItems: expandedItems };
 
-                    var removePayload = {component: {}};
+                    var removePayload = { component: {} };
                     removePayload.component[accordionId] = { shownItems: undefined };
 
                     dataLayer.push(removePayload);
@@ -358,7 +359,7 @@
                     dataLayer.push({
                         event: "cmp:show",
                         eventInfo: {
-                            path: "component." + getDataLayerId(item.dataset.cmpDataLayer)
+                            path: "component." + getDataLayerId(item)
                         }
                     });
                 }
@@ -369,7 +370,7 @@
                     dataLayer.push({
                         event: "cmp:hide",
                         eventInfo: {
-                            path: "component." + getDataLayerId(item.dataset.cmpDataLayer)
+                            path: "component." + getDataLayerId(item)
                         }
                     });
                 }
@@ -447,7 +448,11 @@
                 var button = that._elements["button"][index];
                 var panel = that._elements["panel"][index];
                 button.classList.add(cssClasses.button.expanded);
-                button.setAttribute("aria-expanded", true);
+                // used to fix some known screen readers issues in reading the correct state of the 'aria-expanded' attribute
+                // e.g. https://bugs.webkit.org/show_bug.cgi?id=210934
+                setTimeout(function() {
+                    button.setAttribute("aria-expanded", true);
+                }, delay);
                 panel.classList.add(cssClasses.panel.expanded);
                 panel.classList.remove(cssClasses.panel.hidden);
                 panel.setAttribute("aria-hidden", false);
@@ -474,7 +479,11 @@
                 button.classList.remove(cssClasses.button.disabled);
                 button.classList.remove(cssClasses.button.expanded);
                 button.removeAttribute("aria-disabled");
-                button.setAttribute("aria-expanded", false);
+                // used to fix some known screen readers issues in reading the correct state of the 'aria-expanded' attribute
+                // e.g. https://bugs.webkit.org/show_bug.cgi?id=210934
+                setTimeout(function() {
+                    button.setAttribute("aria-expanded", false);
+                }, delay);
                 panel.classList.add(cssClasses.panel.hidden);
                 panel.classList.remove(cssClasses.panel.expanded);
                 panel.setAttribute("aria-hidden", true);
@@ -529,11 +538,15 @@
      * Parses the dataLayer string and returns the ID
      *
      * @private
-     * @param {String} componentDataLayer the dataLayer string
+     * @param {HTMLElement} item the accordion item
      * @returns {String} dataLayerId or undefined
      */
-    function getDataLayerId(componentDataLayer) {
-        return Object.keys(JSON.parse(componentDataLayer))[0];
+    function getDataLayerId(item) {
+        if (item && item.dataset.cmpDataLayer) {
+            return Object.keys(JSON.parse(item.dataset.cmpDataLayer))[0];
+        } else {
+            return item.id;
+        }
     }
 
     /**
@@ -542,10 +555,10 @@
      * @private
      */
     function onDocumentReady() {
-      dataLayerEnabled = document.body.hasAttribute("data-cmp-data-layer-enabled");
-      dataLayer = (dataLayerEnabled)? window.adobeDataLayer = window.adobeDataLayer || [] : undefined;
+        dataLayerEnabled = document.body.hasAttribute("data-cmp-data-layer-enabled");
+        dataLayer = (dataLayerEnabled) ? window.adobeDataLayer = window.adobeDataLayer || [] : undefined;
 
-      var elements = document.querySelectorAll(selectors.self);
+        var elements = document.querySelectorAll(selectors.self);
         for (var i = 0; i < elements.length; i++) {
             new Accordion({ element: elements[i], options: readData(elements[i]) });
         }
@@ -581,4 +594,6 @@
     } else {
         document.addEventListener("DOMContentLoaded", onDocumentReady);
     }
+
+    window.addEventListener("hashchange", window.CQ.CoreComponents.container.utils.locationHashChanged, false);
 }());

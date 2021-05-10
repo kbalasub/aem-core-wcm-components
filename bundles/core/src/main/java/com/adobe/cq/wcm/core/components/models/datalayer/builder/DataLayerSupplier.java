@@ -15,12 +15,15 @@
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 package com.adobe.cq.wcm.core.components.models.datalayer.builder;
 
-import com.adobe.cq.wcm.core.components.models.datalayer.AssetData;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import org.jetbrains.annotations.NotNull;
+
+import com.adobe.cq.wcm.core.components.models.datalayer.AssetData;
+import com.adobe.cq.wcm.core.components.models.datalayer.ContentFragmentData;
 
 /**
  * Data layer field value supplier.
@@ -40,7 +43,7 @@ public interface DataLayerSupplier {
     */
     @NotNull
     default Supplier<@NotNull String> getId() {
-        throw new UnsupportedOperationException();
+        return () -> null;
     }
 
     /**
@@ -154,6 +157,16 @@ public interface DataLayerSupplier {
     }
 
     /**
+     * Get the smart tags field value supplier.
+     *
+     * @return The smart tags field value supplier, or empty if not set.
+     */
+    @NotNull
+    default Optional<Supplier<Map<String, Object>>> getSmartTags() {
+        return Optional.empty();
+    }
+
+    /**
      * Get the asset data field value supplier.
      *
      * @return The asset data field value supplier, or empty if not set.
@@ -181,6 +194,16 @@ public interface DataLayerSupplier {
      */
     @NotNull
     default Optional<Supplier<String>> getLanguage() {
+        return Optional.empty();
+    }
+
+    /**
+     * Get the content fragment elements field value supplier.
+     *
+     * @return The content fragment elements field value supplier, or empty if not set.
+     */
+    @NotNull
+    default Optional<Supplier<ContentFragmentData.ElementData[]>> getContentFragmentElements() {
         return Optional.empty();
     }
 }

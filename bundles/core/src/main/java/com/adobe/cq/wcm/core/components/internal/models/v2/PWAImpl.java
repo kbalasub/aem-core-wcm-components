@@ -16,6 +16,9 @@
 
 package com.adobe.cq.wcm.core.components.internal.models.v2;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 
@@ -25,19 +28,16 @@ import org.apache.sling.models.annotations.Model;
 import org.apache.sling.models.annotations.injectorspecific.Self;
 
 import com.adobe.cq.wcm.core.components.models.PWA;
+import com.day.cq.wcm.api.Page;
+import com.day.cq.wcm.api.PageManager;
 
 @Model(adaptables = Resource.class,
     adapters = {PWA.class})
 public class PWAImpl implements PWA {
 
-    static final String PROP_PWA_PWAENABLED = "pwaEnabled";
-    static final String PROP_PWA_STARTURL = "startURL";
-    static final String PROP_PWA_THEMECOLOR = "themeColor";
-    static final String PROP_PWA_ICON = "pwaIcon";
-    static final String MANIFEST_NAME = "manifest.webmanifest";
     static final String CONTENT_PATH = "/content/";
 
-    private boolean isPWAEnabled = false;
+    private boolean isEnabled = false;
     private String manifestPath = "";
     private String serviceWorkerPath = "";
     private String themeColor = "";
@@ -49,28 +49,31 @@ public class PWAImpl implements PWA {
     @PostConstruct
     protected void initModel() {
         ValueMap valueMap = resource.getValueMap();
-        Boolean isPWAEnabled = valueMap.get(PROP_PWA_PWAENABLED, Boolean.class);
-        this.isPWAEnabled = (isPWAEnabled != null) ? isPWAEnabled : false;
-        if (!this.isPWAEnabled) {
+        Boolean isPWAEnabled = valueMap.get(PN_PWA_ENABLED, Boolean.class);
+        this.isEnabled = (isPWAEnabled != null) ? isPWAEnabled : false;
+        if (!this.isEnabled) {
             return;
         }
 
-        this.themeColor = colorToHex(valueMap.get(PROP_PWA_THEMECOLOR, ""));
-        this.iconPath = valueMap.get(PROP_PWA_ICON, "");
+        this.themeColor = colorToHex(valueMap.get(PN_PWA_THEME_COLOR, ""));
+        this.iconPath = valueMap.get(PN_PWA_ICON_PATH, "");
 
-        String startURL = valueMap.get(PROP_PWA_STARTURL, "");
+        String startURL = valueMap.get(PN_PWA_START_URL, "");
         this.manifestPath = replaceSuffix(startURL, MANIFEST_NAME);
 
-        Resource page = resource.getParent();
-        if (page != null) {
-            String mappingName = page.getPath().replace("/", ".").substring(CONTENT_PATH.length());
-            this.serviceWorkerPath = "/" + mappingName + "sw.js";
+        PageManager pageManager = resource.getResourceResolver().adaptTo(PageManager.class);
+        if (pageManager != null) {
+            Page page = pageManager.getContainingPage(resource);
+            if (page != null) {
+                String mappingName = page.getPath().replace(CONTENT_PATH, "").replace("/", ".");
+                this.serviceWorkerPath = "/" + mappingName + "sw.js";
+            }
         }
     }
 
     @Override
-    public boolean isPWAEnabled() {
-        return this.isPWAEnabled;
+    public boolean isEnabled() {
+        return this.isEnabled;
     }
 
     @Override
@@ -102,26 +105,21 @@ public class PWAImpl implements PWA {
             return color;
         }
 
-        if (!color.startsWith("rgb")) {
-            return "";
-        }
-
         try {
-            String[] parts = color.split(",");
-            String r = Integer.toHexString(Integer.parseInt(parts[0].substring(parts[0].indexOf("(") + 1)));
-            String g = Integer.toHexString(Integer.parseInt(parts[1]));
-            String b;
+            Pattern rgbPattern = Pattern.compile("^rgba? *\\( *([0-9]+), *([0-9]+), *([0-9]+),? *([01]|0\\.[0-9]*)? *\\)");
+            Matcher rgbMatcher = rgbPattern.matcher(color);
 
-            if (color.startsWith("rgba")) {
-                b = Integer.toHexString(Integer.parseInt(parts[2]));
+            if (!rgbMatcher.matches()) {
+                return "";
             }
-            else {
-                b = Integer.toHexString(Integer.parseInt(parts[2].substring(0, parts[2].indexOf(")"))));
-            }
+
+            String r = Integer.toHexString(Integer.parseInt(rgbMatcher.group(1)));
+            String g = Integer.toHexString(Integer.parseInt(rgbMatcher.group(2)));
+            String b = Integer.toHexString(Integer.parseInt(rgbMatcher.group(3)));
 
             return "#" + (r.length() == 2 ? r : "0" + r) + (g.length() == 2 ? g : "0" + g) + (b.length() == 2 ? b : "0" + b);
         }
-        catch(ArrayIndexOutOfBoundsException | NumberFormatException e) {
+        catch(NumberFormatException e) {
             return "";
         }
     }

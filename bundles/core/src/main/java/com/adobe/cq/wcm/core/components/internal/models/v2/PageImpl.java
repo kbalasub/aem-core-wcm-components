@@ -30,6 +30,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
+import org.apache.sling.caconfig.ConfigurationBuilder;
+import org.apache.sling.caconfig.ConfigurationResolver;
 import org.apache.sling.caconfig.resource.ConfigurationResourceResolver;
 import org.apache.sling.models.annotations.Exporter;
 import org.apache.sling.models.annotations.Model;
@@ -45,11 +47,13 @@ import org.osgi.framework.Version;
 import com.adobe.cq.export.json.ComponentExporter;
 import com.adobe.cq.export.json.ContainerExporter;
 import com.adobe.cq.export.json.ExporterConstants;
+import com.adobe.cq.wcm.core.components.config.HtmlPageItemConfig;
 import com.adobe.cq.wcm.core.components.config.HtmlPageItemsConfig;
+import com.adobe.cq.wcm.core.components.internal.link.LinkHandler;
 import com.adobe.cq.wcm.core.components.internal.models.v1.RedirectItemImpl;
+import com.adobe.cq.wcm.core.components.models.HtmlPageItem;
 import com.adobe.cq.wcm.core.components.models.NavigationItem;
 import com.adobe.cq.wcm.core.components.models.Page;
-import com.adobe.cq.wcm.core.components.models.HtmlPageItem;
 import com.adobe.granite.license.ProductInfoProvider;
 import com.adobe.granite.ui.clientlibs.ClientLibrary;
 import com.adobe.granite.ui.clientlibs.HtmlLibraryManager;
@@ -108,10 +112,10 @@ public class PageImpl extends com.adobe.cq.wcm.core.components.internal.models.v
     private ConfigurationResourceResolver configurationResourceResolver;
 
     /**
-     * The current request.
+     * The @{@link ConfigurationResolver} service.
      */
-    @Self
-    protected SlingHttpServletRequest request;
+    @OSGiService
+    private ConfigurationResolver configurationResolver;
 
     /**
      * The current component context.
@@ -125,6 +129,9 @@ public class PageImpl extends com.adobe.cq.wcm.core.components.internal.models.v
     @ValueMapValue(injectionStrategy = InjectionStrategy.OPTIONAL, name = PN_REDIRECT_TARGET)
     @Nullable
     private String redirectTargetValue;
+
+    @Self
+    private LinkHandler linkHandler;
 
     /**
      * The proxy path of the first client library listed in the style under the
@@ -153,13 +160,17 @@ public class PageImpl extends com.adobe.cq.wcm.core.components.internal.models.v
     protected void initModel() {
         super.initModel();
         this.appResourcesPath = Optional.ofNullable(currentStyle)
-            .map(style -> style.get(PN_APP_RESOURCES_CLIENTLIB, String.class))
-            .map(resourcesClientLibrary -> htmlLibraryManager.getLibraries(new String[]{resourcesClientLibrary}, LibraryType.CSS, true, false))
-            .map(Collection::stream)
-            .orElse(Stream.empty())
-            .findFirst()
-            .map(this::getProxyPath)
-            .orElse(null);
+                .map(style -> style.get(PN_APP_RESOURCES_CLIENTLIB, String.class))
+                .map(resourcesClientLibrary -> htmlLibraryManager.getLibraries(new String[]{resourcesClientLibrary}, LibraryType.CSS, true, false))
+                .map(Collection::stream)
+                .orElse(Stream.empty())
+                .findFirst()
+                .map(this::getProxyPath)
+                .orElse(null);
+    }
+
+    protected NavigationItem newRedirectItem(@NotNull String redirectTarget, @NotNull SlingHttpServletRequest request, @NotNull LinkHandler linkHandler) {
+        return new RedirectItemImpl(redirectTarget, request, linkHandler);
     }
 
     private String getProxyPath(ClientLibrary lib) {
@@ -246,7 +257,7 @@ public class PageImpl extends com.adobe.cq.wcm.core.components.internal.models.v
     @Override
     public NavigationItem getRedirectTarget() {
         if (redirectTarget == null && StringUtils.isNotEmpty(redirectTargetValue)) {
-            redirectTarget = new RedirectItemImpl(redirectTargetValue, request);
+            redirectTarget = newRedirectItem(redirectTargetValue, request, linkHandler);
         }
         return redirectTarget;
     }
@@ -276,13 +287,24 @@ public class PageImpl extends com.adobe.cq.wcm.core.components.internal.models.v
     public @NotNull List<HtmlPageItem> getHtmlPageItems() {
         if (htmlPageItems == null) {
             htmlPageItems = new LinkedList<>();
-            Resource configResource = configurationResourceResolver.getResource(resource, "sling:configs", HtmlPageItemsConfig.class.getName());
-            if (configResource != null) {
-                ValueMap properties = configResource.getValueMap();
-                for (Resource child : configResource.getChildren()) {
-                    HtmlPageItem item = new HtmlPageItemImpl(properties.get(HtmlPageItemsConfig.PN_PREFIX_PATH, StringUtils.EMPTY), child);
-                    if (item.getElement() != null) {
-                        htmlPageItems.add(item);
+            ConfigurationBuilder configurationBuilder = configurationResolver.get(resource);
+            HtmlPageItemsConfig config = configurationBuilder.as(HtmlPageItemsConfig.class);
+            for (HtmlPageItemConfig itemConfig : config.items()) {
+                HtmlPageItem item = new HtmlPageItemImpl(StringUtils.defaultString(config.prefixPath()), itemConfig);
+                if (item.getElement() != null) {
+                    htmlPageItems.add(item);
+                }
+            }
+            // Support the former node structure: see com.adobe.cq.wcm.core.components.config.HtmlPageItemsConfig
+            if (htmlPageItems.isEmpty()) {
+                Resource configResource = configurationResourceResolver.getResource(resource, "sling:configs", HtmlPageItemsConfig.class.getName());
+                if (configResource != null) {
+                    ValueMap properties = configResource.getValueMap();
+                    for (Resource child : configResource.getChildren()) {
+                        HtmlPageItem item = new HtmlPageItemImpl(properties.get(HtmlPageItemsConfig.PN_PREFIX_PATH, StringUtils.EMPTY), child);
+                        if (item.getElement() != null) {
+                            htmlPageItems.add(item);
+                        }
                     }
                 }
             }

@@ -29,6 +29,11 @@ import com.day.cq.commons.jcr.JcrConstants;
 import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 
+import static com.adobe.cq.wcm.core.components.models.PWA.MANIFEST_NAME;
+import static com.adobe.cq.wcm.core.components.models.PWA.PN_PWA_ENABLED;
+import static com.adobe.cq.wcm.core.components.models.PWA.PN_PWA_ICON_PATH;
+import static com.adobe.cq.wcm.core.components.models.PWA.PN_PWA_START_URL;
+import static com.adobe.cq.wcm.core.components.models.PWA.PN_PWA_THEME_COLOR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,7 +44,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(AemContextExtension.class)
 public class PWAImplTest {
 
-    private static final String SITES_PAGE_PATH = "/content/mysite/en";
+    private static final String SITES_PAGE_PATH = "/content/mysite";
     private ResourceResolver resolver;
     private PWA pwa;
     private Resource resource;
@@ -58,17 +63,17 @@ public class PWAImplTest {
         ResourceResolver spyResolver = spy(resolver);
         when(resource.getResourceResolver()).thenReturn(spyResolver);
         Resource mockPWAResource = mock(Resource.class);
-        when(spyResolver.getResource("/content/mysite/" + JcrConstants.JCR_CONTENT)).thenReturn(mockPWAResource);
+        when(spyResolver.getResource(SITES_PAGE_PATH + "/" + JcrConstants.JCR_CONTENT)).thenReturn(mockPWAResource);
 
-        mvp.put("pwaEnabled", true);
-        mvp.put("startURL", SITES_PAGE_PATH + ".html");
+        mvp.put(PN_PWA_ENABLED, true);
+        mvp.put(PN_PWA_START_URL, SITES_PAGE_PATH + ".html");
         when(mockPWAResource.getValueMap()).thenReturn(mvp);
     }
 
     @Test
     public void testPWAReturnsManifestPath() {
         pwa = resource.adaptTo(PWA.class);
-        assertEquals(SITES_PAGE_PATH + "/manifest.webmanifest", pwa.getManifestPath());
+        assertEquals(SITES_PAGE_PATH + "/" + MANIFEST_NAME, pwa.getManifestPath());
     }
 
     @Test
@@ -79,55 +84,55 @@ public class PWAImplTest {
 
     @Test
     public void testPWAReturnsFalseIfPWAOptionIsNotEnabled() {
-        mvp.remove("pwaEnabled");
+        mvp.remove(PN_PWA_ENABLED);
         pwa = resource.adaptTo(PWA.class);
-        assertFalse(pwa.isPWAEnabled());
+        assertFalse(pwa.isEnabled());
     }
 
     @Test
     public void testPWAReturnsTrueIfPWAOptionIsEnabled() {
         pwa = resource.adaptTo(PWA.class);
-        assertTrue(pwa.isPWAEnabled());
+        assertTrue(pwa.isEnabled());
     }
 
     @Test
     public void testPWAReturnsIconPath() {
-        mvp.put("pwaIcon", "/content/dam/foo.png");
+        mvp.put(PN_PWA_ICON_PATH, "/content/dam/foo.png");
         pwa = resource.adaptTo(PWA.class);
         assertEquals("/content/dam/foo.png", pwa.getIconPath());
     }
 
     @Test
     public void testPWAReturnsThemeColor() {
-        mvp.put("themeColor", "#AAAAAA");
+        mvp.put(PN_PWA_THEME_COLOR, "#AAAAAA");
         pwa = resource.adaptTo(PWA.class);
         assertEquals("#AAAAAA", pwa.getThemeColor());
     }
 
     @Test
     public void testPWAReturnsThemeColorConvertingRGBToHex() {
-        mvp.put("themeColor", "rgb(255,160,0)");
+        mvp.put(PN_PWA_THEME_COLOR, "rgb(255,160,0)");
         pwa = resource.adaptTo(PWA.class);
         assertEquals("#ffa000", pwa.getThemeColor());
     }
 
     @Test
     public void testPWAReturnsThemeColorConvertingRGBAToHex() {
-        mvp.put("themeColor", "rgba(255,255,0,0.75)");
+        mvp.put(PN_PWA_THEME_COLOR, "rgba(255,255,0,0.75)");
         pwa = resource.adaptTo(PWA.class);
         assertEquals("#ffff00", pwa.getThemeColor());
     }
 
     @Test
     public void testPWAReturnsBlankThemeColorIfValueHadInvalidFormat() {
-        mvp.put("themeColor", "123");
+        mvp.put(PN_PWA_THEME_COLOR, "123");
         pwa = resource.adaptTo(PWA.class);
         assertEquals("", pwa.getThemeColor());
     }
 
     @Test
     public void testPWAReturnsBlankThemeColorIfValueHadInvalidValue() {
-        mvp.put("themeColor", "rgbbar");
+        mvp.put(PN_PWA_THEME_COLOR, "rgbbar");
         pwa = resource.adaptTo(PWA.class);
         assertEquals("", pwa.getThemeColor());
     }

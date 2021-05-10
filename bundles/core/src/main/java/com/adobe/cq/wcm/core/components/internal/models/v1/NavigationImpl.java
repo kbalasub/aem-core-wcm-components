@@ -26,8 +26,6 @@ import java.util.stream.StreamSupport;
 import javax.annotation.PostConstruct;
 
 import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.models.annotations.Exporter;
 import org.apache.sling.models.annotations.Model;
@@ -39,11 +37,15 @@ import org.jetbrains.annotations.Nullable;
 
 import com.adobe.cq.export.json.ComponentExporter;
 import com.adobe.cq.export.json.ExporterConstants;
+import com.adobe.cq.wcm.core.components.internal.LocalizationUtils;
+import com.adobe.cq.wcm.core.components.internal.link.LinkHandler;
 import com.adobe.cq.wcm.core.components.models.Navigation;
 import com.adobe.cq.wcm.core.components.models.NavigationItem;
-import com.day.cq.wcm.api.*;
+import com.day.cq.wcm.api.LanguageManager;
+import com.day.cq.wcm.api.Page;
+import com.day.cq.wcm.api.PageFilter;
+import com.day.cq.wcm.api.components.Component;
 import com.day.cq.wcm.api.designer.Style;
-import com.day.cq.wcm.msm.api.LiveRelationship;
 import com.day.cq.wcm.msm.api.LiveRelationshipManager;
 
 /**
@@ -70,6 +72,12 @@ public class NavigationImpl extends AbstractComponentImpl implements Navigation 
      */
     @Self
     private SlingHttpServletRequest request;
+
+    /**
+     * The link handler.
+     */
+    @Self
+    private LinkHandler linkHandler;
 
     /**
      * The current page.
@@ -164,36 +172,12 @@ public class NavigationImpl extends AbstractComponentImpl implements Navigation 
         if (this.navigationRootPage == null) {
             String navigationRootPath = Optional.ofNullable(this.resource.getValueMap().get(PN_NAVIGATION_ROOT, String.class))
                 .orElseGet(() -> currentStyle.get(PN_NAVIGATION_ROOT, String.class));
-            PageManager pageManager = currentPage.getPageManager();
-            Page rootPage = pageManager.getPage(navigationRootPath);
-            if (rootPage != null) {
-                Page navigationRootLanguageRoot = getPageResource(rootPage).map(languageManager::getLanguageRoot).orElse(null);
-                Page currentPageLanguageRoot = languageManager.getLanguageRoot(currentPage.getContentResource());
-                if (navigationRootLanguageRoot != null && currentPageLanguageRoot != null && !navigationRootLanguageRoot.equals
-                    (currentPageLanguageRoot)) {
-                    // check if there's a language copy of the navigation root
-                    Page languageCopyNavigationRoot = pageManager.getPage(ResourceUtil.normalize(currentPageLanguageRoot.getPath() + "/" +
-                        getRelativePath(navigationRootLanguageRoot, rootPage)));
-                    if (languageCopyNavigationRoot != null) {
-                        rootPage = languageCopyNavigationRoot;
-                    }
-                } else {
-                    try {
-                        String currentPagePath = currentPage.getPath() + "/";
-                        rootPage = Optional.ofNullable((Iterator<LiveRelationship>) relationshipManager.getLiveRelationships(rootPage.adaptTo(Resource.class), null, null))
-                            .map(liveRelationshipIterator -> StreamSupport.stream(((Iterable<LiveRelationship>) () -> liveRelationshipIterator).spliterator(), false))
-                            .orElseGet(Stream::empty)
-                            .map(LiveRelationship::getTargetPath)
-                            .filter(target -> currentPagePath.startsWith(target + "/"))
-                            .map(pageManager::getPage)
-                            .findFirst()
-                            .orElse(rootPage);
-                    } catch (WCMException e) {
-                        // ignore it
-                    }
-                }
-            }
-            this.navigationRootPage = rootPage;
+            this.navigationRootPage = LocalizationUtils.getLocalPage(navigationRootPath,
+                this.currentPage,
+                this.request.getResourceResolver(),
+                this.languageManager,
+                this.relationshipManager)
+                .orElseGet(() -> currentPage.getPageManager().getPage(navigationRootPath));
         }
         return this.navigationRootPage;
     }
@@ -208,6 +192,11 @@ public class NavigationImpl extends AbstractComponentImpl implements Navigation 
                 .collect(Collectors.toList());
         }
         return Collections.unmodifiableList(items);
+    }
+
+    protected NavigationItem newNavigationItem(Page page, boolean active, boolean current, @NotNull LinkHandler linkHandler, int level,
+                                               List<NavigationItem> children, String parentId, boolean isShadowingDisabled, Component component) {
+        return new NavigationItemImpl(page, active, current, linkHandler, level, children, parentId, isShadowingDisabled, component);
     }
 
     @Override
@@ -264,10 +253,11 @@ public class NavigationImpl extends AbstractComponentImpl implements Navigation 
      * @param children The child navigation items.
      * @return The newly created navigation item.
      */
-    private NavigationItemImpl createNavigationItem(@NotNull final Page page, @NotNull final List<NavigationItem> children) {
+    private NavigationItem createNavigationItem(@NotNull final Page page, @NotNull final List<NavigationItem> children) {
         int level = page.getDepth() - (this.getNavigationRoot().getDepth() + structureStart);
-        boolean selected = checkSelected(page);
-        return new NavigationItemImpl(page, selected, request, level, children, getId(), isShadowingDisabled, component);
+        boolean current = checkCurrent(page);
+        boolean selected = checkSelected(page, current);
+        return newNavigationItem(page, selected, current, linkHandler, level, children, getId(), isShadowingDisabled, component);
     }
 
     /**
@@ -282,10 +272,14 @@ public class NavigationImpl extends AbstractComponentImpl implements Navigation 
      * @param page The page to check.
      * @return True if the page is selected, false if not.
      */
-    private boolean checkSelected(@NotNull final Page page) {
+    private boolean checkSelected(@NotNull final Page page, boolean current) {
+        return current
+            || this.currentPage.getPath().startsWith(page.getPath() + "/");
+    }
+
+    private boolean checkCurrent(@NotNull final Page page) {
         return this.currentPage.equals(page)
-            || this.currentPage.getPath().startsWith(page.getPath() + "/")
-            || currentPageIsRedirectTarget(page);
+                || currentPageIsRedirectTarget(page);
     }
 
     /**
@@ -298,40 +292,6 @@ public class NavigationImpl extends AbstractComponentImpl implements Navigation 
         return NavigationItemImpl.getRedirectTarget(page)
             .filter(target -> target.equals(currentPage))
             .isPresent();
-    }
-
-    /**
-     * Get the relative path between the two pages.
-     *
-     * @param root The root page.
-     * @param child The child page.
-     * @return The relative path between root and child page, null if child is not a child of root.
-     */
-    @Nullable
-    private String getRelativePath(@NotNull final Page root, @NotNull final Page child) {
-        if (child.equals(root)) {
-            return ".";
-        } else if ((child.getPath() + "/").startsWith(root.getPath())) {
-            return child.getPath().substring(root.getPath().length() + 1);
-        }
-        return null;
-    }
-
-    /**
-     * Gets the resource representation of the specified page.
-     *
-     * @param page The page to adapt to a resource.
-     * @return the resource for the specified page, empty if the resource could not be resolved.
-     */
-    @NotNull
-    final Optional<Resource> getPageResource(@NotNull final Page page) {
-        return Optional.ofNullable(
-            Optional.of(page)
-                // get the parent of the content resource
-                .map(Page::getContentResource)
-                .map(Resource::getParent)
-                // if content resource is missing, resolve resource at page path
-                .orElseGet(() -> this.resource.getResourceResolver().getResource(page.getPath())));
     }
 
 }

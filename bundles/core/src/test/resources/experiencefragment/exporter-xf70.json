@@ -3,16 +3,23 @@
     "configured": true,
     ":type": "core/wcm/components/experiencefragment/v1/experiencefragment",
     ":itemsOrder": [
-        "image",
-        "text"
+        "text",
+        "image"
     ],
     ":items": {
         "image": {
-            "url": "/content/dam/we-retail-journal/hq/thunder.png",
+            "id": "image-80fd4f0593",
+            "areas": [],
+            "lazyThreshold": 0,
+            "dmImage": false,
+            "widths": [],
+            "lazyEnabled": true,
             ":type": "my/test/image"
         },
         "text": {
+            "id": "text-3cb839855c",
             "text": "Hi there",
+            "richText": false,
             ":type": "my/test/text"
         }
     },

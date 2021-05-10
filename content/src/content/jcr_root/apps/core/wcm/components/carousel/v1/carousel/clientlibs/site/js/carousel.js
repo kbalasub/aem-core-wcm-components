@@ -134,8 +134,8 @@
                  */
                 window.CQ = window.CQ || {};
                 window.CQ.CoreComponents = window.CQ.CoreComponents || {};
-                CQ.CoreComponents.MESSAGE_CHANNEL = CQ.CoreComponents.MESSAGE_CHANNEL || new window.Granite.author.MessageChannel("cqauthor", window);
-                CQ.CoreComponents.MESSAGE_CHANNEL.subscribeRequestMessage("cmp.panelcontainer", function(message) {
+                window.CQ.CoreComponents.MESSAGE_CHANNEL = window.CQ.CoreComponents.MESSAGE_CHANNEL || new window.Granite.author.MessageChannel("cqauthor", window);
+                window.CQ.CoreComponents.MESSAGE_CHANNEL.subscribeRequestMessage("cmp.panelcontainer", function(message) {
                     if (message.data && message.data.type === "cmp-carousel" && message.data.id === that._elements.self.dataset["cmpPanelcontainerId"]) {
                         if (message.data.operation === "navigate") {
                             navigate(message.data.index);
@@ -220,7 +220,7 @@
                         dataLayer.push({
                             event: "cmp:show",
                             eventInfo: {
-                                path: "component." + getDataLayerId(that._elements.item[index].dataset.cmpDataLayer)
+                                path: "component." + getDataLayerId(that._elements.item[index])
                             }
                         });
                     }
@@ -235,7 +235,7 @@
                         dataLayer.push({
                             event: "cmp:show",
                             eventInfo: {
-                                path: "component." + getDataLayerId(that._elements.item[index].dataset.cmpDataLayer)
+                                path: "component." + getDataLayerId(that._elements.item[index])
                             }
                         });
                     }
@@ -270,6 +270,15 @@
             if (!that._properties.autopauseDisabled) {
                 that._elements.self.addEventListener("mouseenter", onMouseEnter);
                 that._elements.self.addEventListener("mouseleave", onMouseLeave);
+            }
+
+            // for accessibility we pause animation when a element get focused
+            var items = that._elements["item"];
+            if (items) {
+                for (var j = 0; j < items.length; j++) {
+                    items[j].addEventListener("focusin", onMouseEnter);
+                    items[j].addEventListener("focusout", onMouseLeave);
+                }
             }
         }
 
@@ -494,7 +503,7 @@
 
             if (dataLayerEnabled) {
                 var carouselId = that._elements.self.id;
-                var activeItem = getDataLayerId(that._elements.item[index].dataset.cmpDataLayer);
+                var activeItem = getDataLayerId(that._elements.item[index]);
                 var updatePayload = { component: {} };
                 updatePayload.component[carouselId] = { shownItems: [activeItem] };
 
@@ -527,7 +536,7 @@
                 dataLayer.push({
                     event: "cmp:show",
                     eventInfo: {
-                        path: "component." + getDataLayerId(that._elements.item[index].dataset.cmpDataLayer)
+                        path: "component." + getDataLayerId(that._elements.item[index])
                     }
                 });
             }
@@ -624,11 +633,15 @@
      * Parses the dataLayer string and returns the ID
      *
      * @private
-     * @param {String} componentDataLayer the dataLayer string
+     * @param {HTMLElement} item the accordion item
      * @returns {String} dataLayerId or undefined
      */
-    function getDataLayerId(componentDataLayer) {
-        return Object.keys(JSON.parse(componentDataLayer))[0];
+    function getDataLayerId(item) {
+        if (item && item.dataset.cmpDataLayer) {
+            return Object.keys(JSON.parse(item.dataset.cmpDataLayer))[0];
+        } else {
+            return item.id;
+        }
     }
 
     /**
@@ -637,10 +650,10 @@
      * @private
      */
     function onDocumentReady() {
-      dataLayerEnabled = document.body.hasAttribute("data-cmp-data-layer-enabled");
-      dataLayer = (dataLayerEnabled)? window.adobeDataLayer = window.adobeDataLayer || [] : undefined;
+        dataLayerEnabled = document.body.hasAttribute("data-cmp-data-layer-enabled");
+        dataLayer = (dataLayerEnabled) ? window.adobeDataLayer = window.adobeDataLayer || [] : undefined;
 
-      var elements = document.querySelectorAll(selectors.self);
+        var elements = document.querySelectorAll(selectors.self);
         for (var i = 0; i < elements.length; i++) {
             new Carousel({ element: elements[i], options: readData(elements[i]) });
         }

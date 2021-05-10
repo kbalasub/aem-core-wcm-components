@@ -15,6 +15,7 @@
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 package com.adobe.cq.wcm.core.components.models.contentfragment;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -78,7 +79,7 @@ public interface DAMContentFragment extends ComponentExporter {
         @NotNull
         @JsonIgnore
         default String getName() {
-            throw new UnsupportedOperationException();
+            return "";
         }
 
         /**
@@ -90,7 +91,7 @@ public interface DAMContentFragment extends ComponentExporter {
          */
         @Nullable
         default String getTitle() {
-            throw new UnsupportedOperationException();
+            return null;
         }
 
         /**
@@ -105,7 +106,7 @@ public interface DAMContentFragment extends ComponentExporter {
          */
         @NotNull
         default String getDataType() {
-            throw new UnsupportedOperationException();
+            return "";
         }
 
         /**
@@ -118,7 +119,20 @@ public interface DAMContentFragment extends ComponentExporter {
          */
         @Nullable
         default Object getValue() {
-            throw new UnsupportedOperationException();
+            return null;
+        }
+
+        /**
+         * Returns the value of the element. The returned object's type would correspond to the types as specified in
+         * {@link com.adobe.cq.dam.cfm.BasicDataType} or an array of those types.
+         *
+         * @return the value of the element
+         * @see com.adobe.cq.dam.cfm.FragmentData#getValue()
+         * @since com.adobe.cq.wcm.core.components.models.contentfragment 1.0.0
+         */
+        @Nullable
+        default <T> T getValue(Class<T> var1) {
+            return null;
         }
 
         /**
@@ -129,7 +143,7 @@ public interface DAMContentFragment extends ComponentExporter {
         @NotNull
         @Override
         default String getExportedType() {
-            throw new UnsupportedOperationException();
+            return "";
         }
 
         /**
@@ -141,7 +155,7 @@ public interface DAMContentFragment extends ComponentExporter {
          */
         @JsonIgnore
         default boolean isMultiLine() {
-            throw new UnsupportedOperationException();
+            return false;
         }
 
         /**
@@ -152,7 +166,7 @@ public interface DAMContentFragment extends ComponentExporter {
          */
         @JsonProperty("multiValue")
         default boolean isMultiValue() {
-            throw new UnsupportedOperationException();
+            return false;
         }
 
         /**
@@ -168,7 +182,7 @@ public interface DAMContentFragment extends ComponentExporter {
         @Nullable
         @JsonIgnore
         default String getHtml() {
-            throw new UnsupportedOperationException();
+            return null;
         }
     }
 
@@ -181,7 +195,7 @@ public interface DAMContentFragment extends ComponentExporter {
      */
     @Nullable
     default String getTitle() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     /**
@@ -194,7 +208,7 @@ public interface DAMContentFragment extends ComponentExporter {
     @NotNull
     @JsonIgnore
     default String getName() {
-        throw new UnsupportedOperationException();
+        return "";
     }
 
     /**
@@ -206,7 +220,7 @@ public interface DAMContentFragment extends ComponentExporter {
      */
     @Nullable
     default String getDescription() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     /**
@@ -220,7 +234,7 @@ public interface DAMContentFragment extends ComponentExporter {
     @Nullable
     @JsonProperty(JSON_PN_MODEL)
     default String getType() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     /**
@@ -236,7 +250,7 @@ public interface DAMContentFragment extends ComponentExporter {
     @Nullable
     @JsonIgnore
     default List<DAMContentElement> getElements() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     /**
@@ -251,7 +265,7 @@ public interface DAMContentFragment extends ComponentExporter {
     @NotNull
     @JsonProperty(JSON_PN_ELEMENTS)
     default Map<String, DAMContentElement> getExportedElements() {
-        throw new UnsupportedOperationException();
+        return Collections.emptyMap();
     }
 
     /**
@@ -264,7 +278,7 @@ public interface DAMContentFragment extends ComponentExporter {
     @NotNull
     @JsonProperty(JSON_PN_ELEMENTS_ORDER)
     default String[] getExportedElementsOrder() {
-        throw new UnsupportedOperationException();
+        return new String[]{};
     }
 
     /**
@@ -277,7 +291,7 @@ public interface DAMContentFragment extends ComponentExporter {
     @Nullable
     @JsonIgnore
     default List<Resource> getAssociatedContent() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     /**
@@ -289,7 +303,7 @@ public interface DAMContentFragment extends ComponentExporter {
     @NotNull
     @Override
     default String getExportedType() {
-        throw new UnsupportedOperationException();
+        return "";
     }
 
     /**
@@ -301,6 +315,6 @@ public interface DAMContentFragment extends ComponentExporter {
     @NotNull
     @JsonIgnore
     default String getEditorJSON() {
-        throw new UnsupportedOperationException();
+        return "";
     }
 }

@@ -21,6 +21,9 @@
 
     var selectors = {
         dialogContent: ".cmp-embed__editor",
+        designDialogContent: ".cmp-embed__design-editor",
+        allowedEmbeddables: ".allowed-embeddables",
+        toggleCheckboxes: ".toggle-checkbox",
         embeddableField: "[data-cmp-embed-dialog-edit-hook='embeddableField']",
         typeField: "[data-cmp-embed-dialog-edit-hook='typeField']",
         typeRadio: "[data-cmp-embed-dialog-edit-hook='typeField'] coral-radio",
@@ -187,8 +190,85 @@
                     }
                 }
             }
+
+            var designDialogContent = $dialog[0].querySelector(selectors.designDialogContent);
+            if (designDialogContent) {
+                // for all toggles
+                var toggleCheckboxes = designDialogContent.querySelectorAll(selectors.toggleCheckboxes);
+                toggleCheckboxes.forEach(function(toggleCheckbox) {
+                    Coral.commons.ready(toggleCheckbox, function() {
+                        var showHideTarget = getShowHideTarget(toggleCheckbox);
+
+                        // either hide or show them depending on the value of the toggle
+                        toggleShowHideTargets(showHideTarget, toggleCheckbox.checked.toString());
+
+                        // register an event handler
+                        toggleCheckbox.on("change", function() {
+                            toggleShowHideTargets(showHideTarget, toggleCheckbox.checked.toString());
+                        });
+                    });
+                });
+            }
         }
     });
+
+    /**
+     * This is triggered after "dialog-loaded" but is required, as otherwise the relation between panel and tab is not yet established.
+     */
+    $(document).on("dialog-ready", function() {
+        var designDialogContent = document.querySelector(selectors.designDialogContent);
+        if (designDialogContent) {
+            // for all optional tabs
+            var allowedEmbeddablesDropdown = designDialogContent.querySelector(selectors.allowedEmbeddables);
+            Coral.commons.ready(allowedEmbeddablesDropdown, function() {
+                // register an event handler
+                allowedEmbeddablesDropdown.on("change", function() {
+                    toggleShowHideTabs(allowedEmbeddablesDropdown.values);
+                });
+                // set initial state inside requestAnimationFrame as only there the relevant attribute "aria-labelledby" is set
+                window.requestAnimationFrame((function() {
+                    toggleShowHideTabs(allowedEmbeddablesDropdown.values);
+                }));
+            });
+        }
+    });
+
+    /**
+     * Toggles the disabled state and visibility of tabs linked to panels matching the target.
+     * Tabs that match the provided value are enabled / shown, otherwise they are disabled / hidden.
+     *
+     * @param {String[]} values The values of the target to enable and show
+     */
+    function toggleShowHideTabs(values) {
+        var panelElements = document.querySelectorAll("[data-cmp-embed-dialog-edit-embeddableoptions]");
+        for (var i = 0; i < panelElements.length; i++) {
+            var showHideTargetValue = getShowHideTargetValue(panelElements[i]);
+            var tabElement = getTabElementForPanel(panelElements[i]);
+            if (values.includes(showHideTargetValue)) {
+                toggleTarget($(tabElement), true);
+            } else {
+                toggleTarget($(tabElement), false);
+            }
+        }
+    }
+
+    /**
+     * Retrieves the tab element connected to a given panel element
+     *
+     * @param {Element} panelElement The panel element for which to return the tab element
+     * @returns {Element} The related tab element
+     */
+    function getTabElementForPanel(panelElement) {
+        // go to one level below panelstack
+        var panel = panelElement.closest("coral-panel");
+        if (panel !== null) {
+            // get tab id controlling this panel
+            var tabId = panel.getAttribute("aria-labelledby");
+            return document.getElementById(tabId);
+        } else {
+            return null;
+        }
+    }
 
     /**
      * Toggles the disabled state and visibility of elements matching the target.

@@ -40,7 +40,11 @@ import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.models.annotations.Exporter;
 import org.apache.sling.models.annotations.Model;
-import org.apache.sling.models.annotations.injectorspecific.*;
+import org.apache.sling.models.annotations.injectorspecific.InjectionStrategy;
+import org.apache.sling.models.annotations.injectorspecific.ScriptVariable;
+import org.apache.sling.models.annotations.injectorspecific.Self;
+import org.apache.sling.models.annotations.injectorspecific.SlingObject;
+import org.apache.sling.models.annotations.injectorspecific.ValueMapValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -544,7 +548,10 @@ public class ListImpl extends AbstractComponentImpl implements List {
      */
     private static class ListSort implements Comparator<Page>, Serializable {
 
-        private static final long serialVersionUID = 1171225002657014881L;
+        /**
+         * Serial version UID.
+         */
+        private static final long serialVersionUID = -707429230313589969L;
 
         /**
          * The sort order
@@ -553,16 +560,10 @@ public class ListImpl extends AbstractComponentImpl implements List {
         private final SortOrder sortOrder;
 
         /**
-         * The order by field.
-         */
-        @Nullable
-        private final OrderBy orderBy;
-
-        /**
-         * Comparator for comparing titles.
+         * Comparator for comparing pages.
          */
         @NotNull
-        private final Comparator<String> titleComparator;
+        private final Comparator<Page> pageComparator;
 
         /**
          * Construct a page sorting comparator.
@@ -572,24 +573,25 @@ public class ListImpl extends AbstractComponentImpl implements List {
          * @param locale Current locale.
          */
         ListSort(@Nullable final OrderBy orderBy, @Nullable final SortOrder sortOrder, @NotNull Locale locale) {
-            this.orderBy = orderBy;
             this.sortOrder = sortOrder;
-            Collator collator = Collator.getInstance(locale);
-            collator.setStrength(Collator.PRIMARY);
-            this.titleComparator = Comparator.nullsLast(collator);
+
+            if (orderBy == OrderBy.MODIFIED) {
+                // getLastModified may return null, define null to be after nonnull values
+                this.pageComparator = (a, b) -> ObjectUtils.compare(a.getLastModified(), b.getLastModified(), true);
+            } else if (orderBy == OrderBy.TITLE) {
+                Collator collator = Collator.getInstance(locale);
+                collator.setStrength(Collator.PRIMARY);
+                // getTitle may return null, define null to be greater than nonnull values
+                Comparator<String> titleComparator = Comparator.nullsLast(collator);
+                this.pageComparator = (a, b) -> titleComparator.compare(PageListItemImpl.getTitle(a), PageListItemImpl.getTitle(b));
+            } else {
+                this.pageComparator = (a, b) -> 0;
+            }
         }
 
         @Override
         public int compare(@NotNull final Page item1, @NotNull final Page item2) {
-            int i = 0;
-            if (orderBy == OrderBy.MODIFIED) {
-                // getLastModified may return null, define null to be after nonnull values
-                i = ObjectUtils.compare(item1.getLastModified(), item2.getLastModified(), true);
-            } else if (orderBy == OrderBy.TITLE) {
-                // getTitle may return null, define null to be greater than nonnull values
-                i = this.titleComparator.compare(item1.getTitle(), item2.getTitle());
-            }
-
+            int i = this.pageComparator.compare(item1, item2);
             if (sortOrder == SortOrder.DESC) {
                 i = i * -1;
             }

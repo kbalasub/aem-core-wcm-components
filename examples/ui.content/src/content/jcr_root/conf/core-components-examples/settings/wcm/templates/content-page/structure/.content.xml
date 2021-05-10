@@ -62,14 +62,14 @@
                     jcr:lastModifiedBy="admin"
                     jcr:primaryType="nt:unstructured"
                     sling:resourceType="core-components-examples/components/accordion"
-                    expandedItems="[item_1579021121673,item_1579021131667,item_1579021109267,item_1579021109268]"
+                    expandedItems="[item_1579021121673,item_1579021131667,item_1579021109267,item_1579021109268,item_1579021109269]"
                     singleExpansion="false">
                     <item_1579021121673
                         cq:panelTitle="Templating"
                         jcr:lastModified="{Date}2020-01-14T18:00:08.828+01:00"
                         jcr:lastModifiedBy="admin"
                         jcr:primaryType="nt:unstructured"
-                        sling:resourceType="core/wcm/components/navigation/v1/navigation"
+                        sling:resourceType="core-components-examples/components/navigation"
                         collectAllPages="false"
                         navigationRoot="/content/core-components-examples/library/templating"
                         structureDepth="1"
@@ -79,7 +79,7 @@
                         jcr:lastModified="{Date}2020-01-14T18:00:26.432+01:00"
                         jcr:lastModifiedBy="admin"
                         jcr:primaryType="nt:unstructured"
-                        sling:resourceType="core/wcm/components/navigation/v1/navigation"
+                        sling:resourceType="core-components-examples/components/navigation"
                         collectAllPages="false"
                         navigationRoot="/content/core-components-examples/library/page-authoring"
                         structureDepth="1"
@@ -89,7 +89,7 @@
                         jcr:lastModified="{Date}2020-01-14T18:00:53.492+01:00"
                         jcr:lastModifiedBy="admin"
                         jcr:primaryType="nt:unstructured"
-                        sling:resourceType="core/wcm/components/navigation/v1/navigation"
+                        sling:resourceType="core-components-examples/components/navigation"
                         collectAllPages="false"
                         navigationRoot="/content/core-components-examples/library/container"
                         structureDepth="1"
@@ -99,11 +99,12 @@
                         jcr:lastModified="{Date}2020-01-14T18:00:53.492+01:00"
                         jcr:lastModifiedBy="admin"
                         jcr:primaryType="nt:unstructured"
-                        sling:resourceType="core/wcm/components/navigation/v1/navigation"
+                        sling:resourceType="core-components-examples/components/navigation"
                         collectAllPages="false"
                         navigationRoot="/content/core-components-examples/library/form"
                         structureDepth="1"
                         structureStart="1"/>
+                    <item_1579021109269/> <!-- Commerce menu items -->
                 </accordion>
             </sidebar>
             <responsivegrid
@@ -133,16 +134,14 @@
                     jcr:lastModified="{Date}2019-02-16T22:26:21.309+01:00"
                     jcr:lastModifiedBy="admin"
                     jcr:primaryType="nt:unstructured"
-                    sling:resourceType="core/wcm/components/separator/v1/separator"/>
-                <text
+                    sling:resourceType="core-components-examples/components/separator"/>
+                <footer
                     jcr:created="{Date}2019-02-28T21:40:52.076+01:00"
                     jcr:createdBy="admin"
                     jcr:lastModified="{Date}2019-02-28T21:41:47.838+01:00"
                     jcr:lastModifiedBy="admin"
                     jcr:primaryType="nt:unstructured"
-                    sling:resourceType="core/wcm/components/text/v2/text"
-                    text="&lt;p>Built with &lt;a href=&quot;https://github.com/adobe/aem-core-wcm-components/releases/tag/core.wcm.components.reactor-2.12.1&quot;>Core Components 2.12.1&lt;/a>.&lt;/p>&#xa;"
-                    textIsRich="true"/>
+                    sling:resourceType="core-components-examples/components/version/footer"/>
             </responsivegrid_2176569853>
         </root>
         <cq:responsive jcr:primaryType="nt:unstructured">
