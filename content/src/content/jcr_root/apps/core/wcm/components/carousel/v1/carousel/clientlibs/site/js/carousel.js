@@ -271,6 +271,15 @@
                 that._elements.self.addEventListener("mouseenter", onMouseEnter);
                 that._elements.self.addEventListener("mouseleave", onMouseLeave);
             }
+
+            // for accessibility we pause animation when a element get focused
+            var items = that._elements["item"];
+            if (items) {
+                for (var j = 0; j < items.length; j++) {
+                    items[j].addEventListener("focusin", onMouseEnter);
+                    items[j].addEventListener("focusout", onMouseLeave);
+                }
+            }
         }
 
         /**
@@ -628,7 +637,7 @@
      * @returns {String} dataLayerId or undefined
      */
     function getDataLayerId(item) {
-        if (item.dataset.cmpDataLayer) {
+        if (item && item.dataset.cmpDataLayer) {
             return Object.keys(JSON.parse(item.dataset.cmpDataLayer))[0];
         } else {
             return item.id;

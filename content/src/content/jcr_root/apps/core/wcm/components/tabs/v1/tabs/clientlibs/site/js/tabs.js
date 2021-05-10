@@ -85,7 +85,7 @@
             }
 
             // Show the tab based on deep-link-id if it matches with any existing tab item id
-            var deepLinkItemIdx = CQ.CoreComponents.container.utils.getDeepLinkItemIdx(that, "tabpanel");
+            var deepLinkItemIdx = CQ.CoreComponents.container.utils.getDeepLinkItemIdx(that, "tab");
             if (deepLinkItemIdx) {
                 var deepLinkItem = that._elements["tab"][deepLinkItemIdx];
                 if (deepLinkItem && that._elements["tab"][that._active].id !== deepLinkItem.id) {
@@ -357,7 +357,7 @@
      * @returns {String} dataLayerId or undefined
      */
     function getDataLayerId(item) {
-        if (item.dataset.cmpDataLayer) {
+        if (item && item.dataset.cmpDataLayer) {
             return Object.keys(JSON.parse(item.dataset.cmpDataLayer))[0];
         } else {
             return item.id;
@@ -409,5 +409,7 @@
     } else {
         document.addEventListener("DOMContentLoaded", onDocumentReady);
     }
+
+    window.addEventListener("hashchange", window.CQ.CoreComponents.container.utils.locationHashChanged, false);
 
 }());

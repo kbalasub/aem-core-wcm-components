@@ -22,6 +22,7 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 
+import com.adobe.cq.wcm.core.components.internal.servlets.DMAssetPostProcessor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
@@ -36,13 +37,14 @@ import org.slf4j.LoggerFactory;
 
 import com.adobe.cq.export.json.ComponentExporter;
 import com.adobe.cq.export.json.ExporterConstants;
-import com.adobe.cq.wcm.core.components.internal.Utils;
+import com.adobe.cq.wcm.core.components.commons.link.Link;
 import com.adobe.cq.wcm.core.components.internal.models.v1.ImageAreaImpl;
 import com.adobe.cq.wcm.core.components.internal.servlets.AdaptiveImageServlet;
 import com.adobe.cq.wcm.core.components.models.Image;
 import com.adobe.cq.wcm.core.components.models.ImageArea;
 import com.day.cq.dam.api.Asset;
 import com.day.cq.dam.api.DamConstants;
+import com.day.cq.dam.scene7.api.constants.Scene7AssetType;
 import com.day.cq.dam.scene7.api.constants.Scene7Constants;
 
 /**
@@ -174,11 +176,15 @@ public class ImageImpl extends com.adobe.cq.wcm.core.components.internal.models.
                         //check for publish side
                         boolean isWCMDisabled =  (com.day.cq.wcm.api.WCMMode.fromRequest(request) == com.day.cq.wcm.api.WCMMode.DISABLED);
                         String dmServerUrl;
+                        // for Author
                         if (!isWCMDisabled) {
-                            //for Author
-                            dmServerUrl = "/is/image/";
+                            if (asset.getMetadataValue(Scene7Constants.PN_S7_TYPE).equals(Scene7AssetType.ANIMATED_GIF.getValue())) {
+                                dmServerUrl = DMAssetPostProcessor.CONTENT_SERVER_PATH;
+                            } else {
+                                dmServerUrl = DMAssetPostProcessor.IMAGE_SERVER_PATH;
+                            }
                         } else {
-                            //for Publish
+                            // for Publish
                             dmServerUrl = (String) properties.get(PN_IMAGE_SERVER_URL);
                         }
                         dmImageUrl = dmServerUrl + dmAssetName;
@@ -252,19 +258,24 @@ public class ImageImpl extends com.adobe.cq.wcm.core.components.internal.models.
                     srcUriTemplate += imageModifiersCommand;
                     src += imageModifiersCommand;
                 }
+                //add "dpr=off" parameter to image source url
+                String dprOffParameter = (srcUriTemplate.contains("?") ? '&':'?') + "dpr=off";
+                srcUriTemplate += dprOffParameter;
+                src += dprOffParameter;
                 if (srcUriTemplate.equals(src)) {
                     srcUriTemplate = null;
                 }
             }
+
+            buildAreas();
             buildJson();
         }
 
         this.lazyThreshold = currentStyle.get(PN_DESIGN_LAZY_THRESHOLD, 0);
     }
 
-    @NotNull
     @Override
-    public int[] getWidths() {
+    public int @NotNull [] getWidths() {
         return Arrays.copyOf(smartSizes, smartSizes.length);
     }
 
@@ -293,43 +304,8 @@ public class ImageImpl extends com.adobe.cq.wcm.core.components.internal.models.
 
     @Override
     public List<ImageArea> getAreas() {
-        if (areas == null ) {
-            areas = new ArrayList<>();
-            if (hasContent) {
-                String mapProperty = properties.get(Image.PN_MAP, String.class);
-                if (StringUtils.isNotEmpty(mapProperty)) {
-                    // Parse the image map areas as defined at {@code Image.PN_MAP}
-                    String[] mapAreas = StringUtils.split(mapProperty, "][");
-                    for (String area : mapAreas) {
-                        int coordinatesEndIndex = area.indexOf(')');
-                        if (coordinatesEndIndex < 0) {
-                            break;
-                        }
-                        String shapeAndCoords = StringUtils.substring(area, 0, coordinatesEndIndex + 1);
-                        String shape = StringUtils.substringBefore(shapeAndCoords, "(");
-                        String coordinates = StringUtils.substringBetween(shapeAndCoords, "(", ")");
-                        String remaining = StringUtils.substring(area, coordinatesEndIndex + 1);
-                        String[] remainingTokens = StringUtils.split(remaining, "|");
-                        if (StringUtils.isBlank(shape) || StringUtils.isBlank(coordinates)) {
-                            break;
-                        }
-                        if (remainingTokens.length > 0) {
-                            String href = StringUtils.removeAll(remainingTokens[0], "\"");
-                            if (StringUtils.isBlank(href)) {
-                                break;
-                            }
-                            String target = remainingTokens.length > 1 ? StringUtils.removeAll(remainingTokens[1], "\"") : "";
-                            String alt = remainingTokens.length > 2 ? StringUtils.removeAll(remainingTokens[2], "\"") : "";
-                            String relativeCoordinates = remainingTokens.length > 3 ? remainingTokens[3] : "";
-                            relativeCoordinates = StringUtils.substringBetween(relativeCoordinates, "(", ")");
-                            if (href.startsWith("/")) {
-                                href = Utils.getURL(request, pageManager, href);
-                            }
-                            areas.add(new ImageAreaImpl(shape, coordinates, relativeCoordinates, href, target, alt));
-                        }
-                    }
-                }
-            }
+        if (areas == null) {
+            return Collections.emptyList();
         }
         return Collections.unmodifiableList(areas);
     }
@@ -337,5 +313,46 @@ public class ImageImpl extends com.adobe.cq.wcm.core.components.internal.models.
     @Override
     public String getUuid() {
         return uuid;
+    }
+
+    protected void buildAreas() {
+        areas = new ArrayList<>();
+        String mapProperty = properties.get(Image.PN_MAP, String.class);
+        if (StringUtils.isNotEmpty(mapProperty)) {
+            // Parse the image map areas as defined at {@code Image.PN_MAP}
+            String[] mapAreas = StringUtils.split(mapProperty, "][");
+            for (String area : mapAreas) {
+                int coordinatesEndIndex = area.indexOf(')');
+                if (coordinatesEndIndex < 0) {
+                    break;
+                }
+                String shapeAndCoords = StringUtils.substring(area, 0, coordinatesEndIndex + 1);
+                String shape = StringUtils.substringBefore(shapeAndCoords, "(");
+                String coordinates = StringUtils.substringBetween(shapeAndCoords, "(", ")");
+                String remaining = StringUtils.substring(area, coordinatesEndIndex + 1);
+                String[] remainingTokens = StringUtils.split(remaining, "|");
+                if (StringUtils.isBlank(shape) || StringUtils.isBlank(coordinates)) {
+                    break;
+                }
+                if (remainingTokens.length > 0) {
+                    String href = StringUtils.removeAll(remainingTokens[0], "\"");
+                    String target = remainingTokens.length > 1 ? StringUtils.removeAll(remainingTokens[1], "\"") : "";
+
+                    Link link = linkHandler.getLink(href, target).orElse(null);
+                    if (link == null || !link.isValid()) {
+                        break;
+                    }
+
+                    String alt = remainingTokens.length > 2 ? StringUtils.removeAll(remainingTokens[2], "\"") : "";
+                    String relativeCoordinates = remainingTokens.length > 3 ? remainingTokens[3] : "";
+                    relativeCoordinates = StringUtils.substringBetween(relativeCoordinates, "(", ")");
+                    areas.add(newImageArea(shape, coordinates, relativeCoordinates, link, alt));
+                }
+            }
+        }
+    }
+
+    protected ImageArea newImageArea(String shape, String coordinates, String relativeCoordinates, @NotNull Link link, String alt ) {
+        return new ImageAreaImpl(shape, coordinates, relativeCoordinates, link, alt);
     }
 }

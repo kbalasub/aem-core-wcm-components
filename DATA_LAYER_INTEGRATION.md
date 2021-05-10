@@ -124,7 +124,7 @@ Breadcrumb | x
 Button | x
 Carousel | x
 Container | 
-Content Fragment | 
+Content Fragment | x
 Content Fragment List | 
 Download | 
 Embed | 
@@ -180,6 +180,31 @@ id: {
     xdm:linkURL
     parentId
     shownItems          // array of the displayed item IDs
+}
+```
+
+#### Content Fragment
+
+Schema used for the Content Fragment:
+
+```
+id: {
+    @type
+    repo:modifyDate
+    dc:title
+    dc:description
+    xdm:text
+    xdm:linkURL
+    parentId
+    elements            // array of the Content Fragment elements
+}
+```
+
+Schema used for the Content Fragment element:
+```
+{
+    xdm:title           // title
+    xdm:text            // text
 }
 ```
 
